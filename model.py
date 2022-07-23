@@ -10,6 +10,11 @@ Created on Mon Jul 18 17:04:43 2022
     torch >= 1.7.1
     torchvision >= 0.8.2
 
+@references:
+    Redmon, Joseph and Farhadi, Ali, YOLOv3: An Incremental Improvement, April 8, 2018. (https://doi.org/10.48550/arXiv.1804.02767)
+    Ayoosh Kathuria, Whats new in YOLO v3?, April, 23, 2018. (https://towardsdatascience.com/yolo-v3-object-detection-53fb7d3bfe6b)
+    Sanna Persson, YOLOv3 from Scratch (https://sannaperzon.medium.com/yolov3-implementation-with-training-setup-from-scratch-30ecb9751cb0)
+
 Implementation of YOLOv3 architecture
 """
 
@@ -130,35 +135,44 @@ class YOLOv3(nn.Module):
         super(YOLOv3, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
-        self.layers = self._create_conv_layers() # we want to create the layers using the config files
+        # we want to create the layers using the config file, and store them in a nn.ModuleList()
+        self.layers = self._create_conv_layers() # we immediately call _create_conv_layers() to initialize the layers
 
     def forward(self, x):
-        outputs = []  # for each scale
-        route_connections = []
+        # need to keep track of outputs and route connections
+        outputs = []           # we have one output for each scale prediction, should be 3 in total
+        route_connections = [] # e.g. after upsampling, we concatenate the channels of skip connections
+
         for layer in self.layers:
-            if isinstance(layer, ScalePrediction):
-                outputs.append(layer(x))
-                continue
+            if isinstance(layer, ScalePrediction): # if it's ScalePrediction
+                outputs.append(layer(x)) # we're going to add that layer
+                continue # and then continue from where we were previously, not after ScalePrediction
 
-            x = layer(x)
+            # calling layer(x) is equivalent to calling layers.__call__(x), and __call__() is actually calling layer.forward(x)
+            # which is defined in class layer(nn.Module), but in practice we should use layer(x) rather than layer.forward(x)
+            x = layer(x) # 
+            print(x.shape)
 
+            # skip layers are connected to ["B", 8] based on the paper, original config file 
             if isinstance(layer, ResidualBlock) and layer.num_repeats == 8:
                 route_connections.append(x)
 
-            elif isinstance(layer, nn.Upsample):
-                x = torch.cat([x, route_connections[-1]], dim=1)
-                route_connections.pop()
+            elif isinstance(layer, nn.Upsample): # if we use the Upsample
+                # we want to concatenates with the last route connection, with the last one we added
+                x = torch.cat([x, route_connections[-1]], dim=1) # why concatenate along dimension 1 for the channels
+                route_connections.pop() # after concatenation, we remove the last one
 
+        print(f"outputs: {outputs}")
         return outputs
 
     # create the layers using the config files
     def _create_conv_layers(self):
         layers = nn.ModuleList()       # keep track of all the layers in a ModuleList, which supports tools like model.eval() 
-        in_channels = self.in_channels # 
+        in_channels = self.in_channels # only need to specifies the first in_channels, I suppose
 
         # go through and parse the config file and construct the model line by line
         for module in config:
-            # if it's a tuple, then it's just a CNNBlock
+            # if it's a tuple (filters, kernel_size, stride), e.g. (32, 3, 1), then it's just a CNNBlock
             if isinstance(module, tuple):
                 out_channels, kernel_size, stride = module # we want to take out the (filters, kernel_size, stride)
                 layers.append(
@@ -171,41 +185,60 @@ class YOLOv3(nn.Module):
                     )
                 )
                 # the in_channels for the next block is going to be the out_channels of this block
-                in_channels = out_channels 
+                in_channels = out_channels # update the in_channels of the next layer
 
-            # if it's a List, then it's a ResidualBlock
+            # if it's a List, e.g. ["B", 1], then it's a ResidualBlock
             elif isinstance(module, list):
-                num_repeats = module[1] # we want to take out the number of repeats
-                # module[0] should be "B" and it's useless, just indicating this is a ResidualBlock
+                num_repeats = module[1] # we want to take out the number of repeats, which is going to be module[1]
+                # and module[0] should be "B", which indicates that this is a ResidualBlock
                 layers.append(ResidualBlock(in_channels, num_repeats=num_repeats,))
 
-            # if it's a String, then it's a 
+            # if it's a String, e.g. "S" or "U", then it might be ScalePrediction or Upsampling
             elif isinstance(module, str):
+                # "S" for ScalePrediction
                 if module == "S":
                     layers += [
                         ResidualBlock(in_channels, use_residual=False, num_repeats=1),
                         CNNBlock(in_channels, in_channels // 2, kernel_size=1),
                         ScalePrediction(in_channels // 2, num_classes=self.num_classes),
                     ]
-                    in_channels = in_channels // 2
-
+                    # after ScalePrediction, we want to continue from CNNBlock, since we have scale_factor=2
+                    in_channels = in_channels // 2 # we then wnat to divide in_channels by 2
+                # "U" for Upsampling
                 elif module == "U":
                     layers.append(nn.Upsample(scale_factor=2),)
-                    in_channels = in_channels * 3
-
+                    in_channels = in_channels * 3 # 3 == 2 + 1, concatenated the channels from previously
+        
         return layers
 
 
 if __name__ == "__main__":
+    # actual parameters
     num_classes = 1 # 20
-    IMAGE_SIZE = 16 # 416
-    model = YOLOv3(num_classes=num_classes)
-    x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE)) # x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE))
-    out = model(x)
-    stride = [8, 4, 2] 
-    # stride = [32, 16, 8] 
-    assert model(x)[0].shape == (2, 3, IMAGE_SIZE//stride[0], IMAGE_SIZE//stride[0], num_classes + 5)
-    assert model(x)[1].shape == (2, 3, IMAGE_SIZE//stride[1], IMAGE_SIZE//stride[1], num_classes + 5)
-    assert model(x)[2].shape == (2, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5)
+    # YOLOv1: 448, YOLOv2/YOLOv3: 416 (with multi-scale training)
+    IMAGE_SIZE = 416 # multiples of 32 are workable with stride [32, 16, 8]
+    # stride = [8, 4, 2] 
+    # stride = [16, 8, 4]
+    stride = [32, 16, 8]
+
+    # simple test settings
+    num_examples = 2
+    num_channels = 3 # num_anchors
+    
+    model = YOLOv3(num_classes=num_classes) # initialize a YOLOv3 model as model
+    # simple test with random inputs of 2 examples, 3 channels, and IMAGE_SIZE-by-IMAGE_SIZE input
+    x = torch.randn((num_examples, num_channels, IMAGE_SIZE, IMAGE_SIZE))
+    out = model(x) 
+
+    print("Output Shape: ")
+    for i in range(num_channels):
+        print(out[i].shape)
+    
+    assert out[0].shape == (2, 3, IMAGE_SIZE//stride[0], IMAGE_SIZE//stride[0], num_classes + 5) # [2, 3, 13, 13, num_classes + 5]
+    assert out[1].shape == (2, 3, IMAGE_SIZE//stride[1], IMAGE_SIZE//stride[1], num_classes + 5) # [2, 3, 26, 26, num_classes + 5]
+    assert out[2].shape == (2, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5) # [2, 3, 52, 52, num_classes + 5]
     print("Success!")
+
+    
+    
 
