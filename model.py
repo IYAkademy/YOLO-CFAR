@@ -200,8 +200,7 @@ if __name__ == "__main__":
     num_classes = 1 # 20
     IMAGE_SIZE = 16 # 416
     model = YOLOv3(num_classes=num_classes)
-    # x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE))
-    x = torch.randn((1, 1, IMAGE_SIZE, IMAGE_SIZE))
+    x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE)) # x = torch.randn((2, 3, IMAGE_SIZE, IMAGE_SIZE))
     out = model(x)
     stride = [8, 4, 2] 
     # stride = [32, 16, 8] 
@@ -209,3 +208,4 @@ if __name__ == "__main__":
     assert model(x)[1].shape == (2, 3, IMAGE_SIZE//stride[1], IMAGE_SIZE//stride[1], num_classes + 5)
     assert model(x)[2].shape == (2, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5)
     print("Success!")
+
