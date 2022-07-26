@@ -85,7 +85,8 @@ class ResidualBlock(nn.Module):
             self.layers += [
                 nn.Sequential(
                     CNNBlock(channels, channels // 2, kernel_size=1, padding=0), # down samples or reduces the number of filters
-                    CNNBlock(channels // 2, channels, kernel_size=3, padding=1), # then brings it back again
+                    # CNNBlock(channels // 2, channels, kernel_size=3, padding=1), # then brings it back again
+                    CNNBlock(channels // 2, channels, kernel_size=3, padding=1), 
                 )
             ]
         # 1. why specify use_residual in a ResidualBlock? is because in some cases we are going to use skip 
@@ -111,7 +112,8 @@ class ScalePrediction(nn.Module):
         # for every single cell grid we have 3 anchor boxes, for every anchor box we have 1 node for each of the classes
         # for each bounding box we have [P(Object), x, y, w, h] and that's 5 values
         self.pred = nn.Sequential(
-            CNNBlock(in_channels, 2 * in_channels, kernel_size=3, padding=1),
+            # CNNBlock(in_channels, 2 * in_channels, kernel_size=3, padding=1), 
+            CNNBlock(in_channels, 2 * in_channels, kernel_size=3, padding=1), 
             CNNBlock(2 * in_channels, 3 * (num_classes + 5), bn_act=False, kernel_size=1),
         )
         self.num_classes = num_classes
@@ -143,7 +145,7 @@ class YOLOv3(nn.Module):
         outputs = []           # we have one output for each scale prediction, should be 3 in total
         route_connections = [] # e.g. after upsampling, we concatenate the channels of skip connections
 
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             if isinstance(layer, ScalePrediction): # if it's ScalePrediction
                 outputs.append(layer(x)) # we're going to add that layer
                 continue # and then continue from where we were previously, not after ScalePrediction
@@ -151,7 +153,7 @@ class YOLOv3(nn.Module):
             # calling layer(x) is equivalent to calling layers.__call__(x), and __call__() is actually calling layer.forward(x)
             # which is defined in class layer(nn.Module), but in practice we should use layer(x) rather than layer.forward(x)
             x = layer(x) # 
-            print(x.shape)
+            print(f"layer {i}: ", x.shape)
 
             # skip layers are connected to ["B", 8] based on the paper, original config file 
             if isinstance(layer, ResidualBlock) and layer.num_repeats == 8:
@@ -162,7 +164,7 @@ class YOLOv3(nn.Module):
                 x = torch.cat([x, route_connections[-1]], dim=1) # why concatenate along dimension 1 for the channels
                 route_connections.pop() # after concatenation, we remove the last one
 
-        print(f"outputs: {outputs}")
+        # print(f"outputs: {outputs}")
         return outputs
 
     # create the layers using the config files
@@ -181,7 +183,8 @@ class YOLOv3(nn.Module):
                         out_channels,
                         kernel_size=kernel_size,
                         stride=stride,
-                        padding=1 if kernel_size == 3 else 0, # if kernel_size == 1 then padding = 0
+                        # padding=1 if kernel_size == 3 else 0, # if kernel_size == 1 then padding = 0
+                        padding=1 if kernel_size == 3 else 0, 
                     )
                 )
                 # the in_channels for the next block is going to be the out_channels of this block
@@ -216,7 +219,7 @@ if __name__ == "__main__":
     # actual parameters
     num_classes = 1 # 20
     # YOLOv1: 448, YOLOv2/YOLOv3: 416 (with multi-scale training)
-    IMAGE_SIZE = 416 # multiples of 32 are workable with stride [32, 16, 8]
+    IMAGE_SIZE = 32 # multiples of 32 are workable with stride [32, 16, 8]
     # stride = [8, 4, 2] 
     # stride = [16, 8, 4]
     stride = [32, 16, 8]
@@ -230,7 +233,9 @@ if __name__ == "__main__":
     x = torch.randn((num_examples, num_channels, IMAGE_SIZE, IMAGE_SIZE))
     out = model(x) 
 
+    
     print("Output Shape: ")
+    print("[num_examples, num_channels, feature_map, feature_map, num_classes + 5]")
     for i in range(num_channels):
         print(out[i].shape)
     
@@ -239,6 +244,73 @@ if __name__ == "__main__":
     assert out[2].shape == (2, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5) # [2, 3, 52, 52, num_classes + 5]
     print("Success!")
 
-    
-    
 
+# layer 0:  torch.Size([2, 32, 32, 32])
+# layer 1:  torch.Size([2, 64, 16, 16])
+# layer 2:  torch.Size([2, 64, 16, 16])
+# layer 3:  torch.Size([2, 128, 8, 8])
+# layer 4:  torch.Size([2, 128, 8, 8])
+# layer 5:  torch.Size([2, 256, 4, 4])
+# layer 6:  torch.Size([2, 256, 4, 4])
+# layer 7:  torch.Size([2, 512, 2, 2])
+# layer 8:  torch.Size([2, 512, 2, 2])
+# layer 9:  torch.Size([2, 1024, 1, 1])
+# layer 10:  torch.Size([2, 1024, 1, 1])
+# layer 11:  torch.Size([2, 512, 1, 1])
+# layer 12:  torch.Size([2, 1024, 1, 1])
+# layer 13:  torch.Size([2, 1024, 1, 1])
+# layer 14:  torch.Size([2, 512, 1, 1])
+# layer 16:  torch.Size([2, 256, 1, 1])
+# layer 17:  torch.Size([2, 256, 2, 2])
+# layer 18:  torch.Size([2, 256, 2, 2])
+# layer 19:  torch.Size([2, 512, 2, 2])
+# layer 20:  torch.Size([2, 512, 2, 2])
+# layer 21:  torch.Size([2, 256, 2, 2])
+# layer 23:  torch.Size([2, 128, 2, 2])
+# layer 24:  torch.Size([2, 128, 4, 4])
+# layer 25:  torch.Size([2, 128, 4, 4])
+# layer 26:  torch.Size([2, 256, 4, 4])
+# layer 27:  torch.Size([2, 256, 4, 4])
+# layer 28:  torch.Size([2, 128, 4, 4])
+# Output Shape: 
+# [num_examples, num_channels, feature_map, feature_map, num_classes + 5]
+# torch.Size([2, 3, 1, 1, 6])
+# torch.Size([2, 3, 2, 2, 6])
+# torch.Size([2, 3, 4, 4, 6])
+# Success!
+
+
+# layer 0:  torch.Size([2, 32, 416, 416])
+# layer 1:  torch.Size([2, 64, 208, 208])
+# layer 2:  torch.Size([2, 64, 208, 208])
+# layer 3:  torch.Size([2, 128, 104, 104])
+# layer 4:  torch.Size([2, 128, 104, 104])
+# layer 5:  torch.Size([2, 256, 52, 52])
+# layer 6:  torch.Size([2, 256, 52, 52])
+# layer 7:  torch.Size([2, 512, 26, 26])
+# layer 8:  torch.Size([2, 512, 26, 26])
+# layer 9:  torch.Size([2, 1024, 13, 13])
+# layer 10:  torch.Size([2, 1024, 13, 13])
+# layer 11:  torch.Size([2, 512, 13, 13])
+# layer 12:  torch.Size([2, 1024, 13, 13])
+# layer 13:  torch.Size([2, 1024, 13, 13])
+# layer 14:  torch.Size([2, 512, 13, 13])
+# layer 16:  torch.Size([2, 256, 13, 13])
+# layer 17:  torch.Size([2, 256, 26, 26])
+# layer 18:  torch.Size([2, 256, 26, 26])
+# layer 19:  torch.Size([2, 512, 26, 26])
+# layer 20:  torch.Size([2, 512, 26, 26])
+# layer 21:  torch.Size([2, 256, 26, 26])
+# layer 23:  torch.Size([2, 128, 26, 26])
+# layer 24:  torch.Size([2, 128, 52, 52])
+# layer 25:  torch.Size([2, 128, 52, 52])
+# layer 26:  torch.Size([2, 256, 52, 52])
+# layer 27:  torch.Size([2, 256, 52, 52])
+# layer 28:  torch.Size([2, 128, 52, 52])
+
+# Output Shape: 
+# [num_examples, num_channels, feature_map, feature_map, num_classes + 5]
+# torch.Size([2, 3, 13, 13, 6])
+# torch.Size([2, 3, 26, 26, 6])
+# torch.Size([2, 3, 52, 52, 6])
+# Success!
