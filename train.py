@@ -13,23 +13,24 @@ Created on Mon Jul 18 16:57:39 2022
 
 Main file for training Yolo model on Pascal VOC and COCO dataset
 """
-import config
-import torch
-import torch.optim as optim
-
+import config # for hyper-parameter tuning stuffs
 from model import YOLOv3
-from tqdm import tqdm
+from loss import YoloLoss
 from utils import (
-    mean_average_precision,
-    cells_to_bboxes,
-    get_evaluation_bboxes,
-    save_checkpoint,
-    load_checkpoint,
-    check_class_accuracy,
-    get_loaders,
+    mean_average_precision, 
+    cells_to_bboxes, # convert the cells to actual bounding boxes relative to the entire image
+    get_evaluation_bboxes, 
+    save_checkpoint, 
+    load_checkpoint, 
+    check_class_accuracy, 
+    get_loaders, 
     plot_couple_examples
 )
-from loss import YoloLoss
+
+import torch
+import torch.optim as optim
+from tqdm import tqdm # for progress bar
+
 # import gc
 
 torch.backends.cudnn.benchmark = True
@@ -39,19 +40,13 @@ def train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors):
     losses = []
     for batch_idx, (x, y) in enumerate(loop):
         x = x.to(config.DEVICE)
-        y0, y1, y2 = (
-            y[0].to(config.DEVICE),
-            y[1].to(config.DEVICE),
-            y[2].to(config.DEVICE),
-        )
+        y0, y1, y2 = (y[0].to(config.DEVICE), y[1].to(config.DEVICE), y[2].to(config.DEVICE), )
 
         with torch.cuda.amp.autocast():
             out = model(x)
-            loss = (
-                loss_fn(out[0], y0, scaled_anchors[0])
-                + loss_fn(out[1], y1, scaled_anchors[1])
-                + loss_fn(out[2], y2, scaled_anchors[2])
-            )
+            loss = (loss_fn(out[0], y0, scaled_anchors[0]) 
+                  + loss_fn(out[1], y1, scaled_anchors[1]) 
+                  + loss_fn(out[2], y2, scaled_anchors[2])) 
 
         losses.append(loss.item())
         optimizer.zero_grad()
@@ -80,9 +75,7 @@ def main():
     # torch.cuda.memory_summary(device=None, abbreviated=False) # doesn't work
 
     model = YOLOv3(num_classes=config.NUM_CLASSES).to(config.DEVICE)
-    optimizer = optim.Adam(
-        model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
-    )
+    optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
     loss_fn = YoloLoss()
     scaler = torch.cuda.amp.GradScaler()
 
@@ -92,14 +85,9 @@ def main():
     )
 
     if config.LOAD_MODEL:
-        load_checkpoint(
-            config.CHECKPOINT_FILE, model, optimizer, config.LEARNING_RATE
-        )
+        load_checkpoint(config.CHECKPOINT_FILE, model, optimizer, config.LEARNING_RATE)
 
-    scaled_anchors = (
-        torch.tensor(config.ANCHORS)
-        * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)
-    ).to(config.DEVICE)
+    scaled_anchors = (torch.tensor(config.ANCHORS) * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)).to(config.DEVICE)
 
     for epoch in range(config.NUM_EPOCHS):
         # plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
@@ -115,7 +103,6 @@ def main():
         check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
 
         if epoch % 10 == 0 and epoch > 0:
-        # if True:
             print("On Test loader:")
             check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 
@@ -139,3 +126,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+    
