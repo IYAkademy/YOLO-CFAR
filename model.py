@@ -30,19 +30,21 @@ Information about architecture config:
     "U" is for upsampling the feature map and concatenating with a previous layer
 """
 config = [
-    (32, 3, 1),
+    (32, 3, 1),   # (32, 3, 1) is the CBL, CBL = Conv + BN + LeakyReLU
     (64, 3, 2),
-    ["B", 1],     # ["B", 1],
+    ["B", 1],     # (64, 3, 2) + ["B", 1] is the Res1, Res1 = ZeroPadding + CBL + (CBL + CBL + Add)*1
     (128, 3, 2),
-    ["B", 2],     # ["B", 2],
+    ["B", 2],     # (128, 3, 2) + ["B", 2] is th Res2, Res2 = ZeroPadding + CBL + (CBL + CBL + Add)*2
     (256, 3, 2),
-    ["B", 8],     # ["B", 8],
+    ["B", 8],     # (256, 3, 2) + ["B", 8] is th Res8, Res8 = ZeroPadding + CBL + (CBL + CBL + Add)*8
     (512, 3, 2),
-    ["B", 8],     # ["B", 8],
+    ["B", 8],     # (512, 3, 2) + ["B", 8] is th Res8, Res8 = ZeroPadding + CBL + (CBL + CBL + Add)*8
     (1024, 3, 2),
-    ["B", 4],     # ["B", 4], To this point is Darknet-53
-    (512, 1, 1),
-    (1024, 3, 1),
+    ["B", 4],     # (1024, 3, 2) + ["B", 4] is th Res4, Res4 = ZeroPadding + CBL + (CBL + CBL + Add)*4
+    # to this point is Darknet-53 which has 52 layers
+    # 52 = 1 + (1 + 1*2) + (1 + 2*2) + (1 + 8*2) + (1 + 8*2) + (1 + 4*2) ?
+    (512, 1, 1),  # 
+    (1024, 3, 1), #
     "S",
     (256, 1, 1),
     "U",
@@ -54,6 +56,36 @@ config = [
     (128, 1, 1),
     (256, 3, 1),
     "S",
+    # 252 = 1 + 3 + (4+7) + (4+7*2) + (4+7*8) + (4+7*8) + (4+7*4) + 19 + 5 + 19 + 5 + 19 ?
+]
+
+config = [
+    (32 // 2, 3, 1),
+    (64 // 2, 3, 2),
+    ["B", 1],     # (64, 3, 2) + ["B", 1] is the Res1
+    (128, 3, 2),
+    ["B", 2],     # (128, 3, 2) + ["B", 2] is th Res2
+    # (256, 3, 2),
+    # ["B", 8],     # (256, 3, 2) + ["B", 8] is th Res8
+    (512, 3, 2),
+    ["B", 4],     # (512, 3, 2) + ["B", 8] is th Res8
+    (1024 // 2, 3, 2),
+    ["B", 1],     # ["B", 4], to this point is Darknet-53, which has 53 layers?
+    # 52 = 1 + (1 + 1*2) + (1 + 2*2) + (1 + 8*2) + (1 + 8*2) + (1 + 4*2) ?
+    (512 // 2, 1, 1),
+    (1024, 3, 1),
+    "S",
+    (256, 1, 1),
+    "U",
+    (256 // 2, 1, 1),
+    (512 // 2, 3, 1),
+    "S",
+    (128 // 2, 1, 1), # 
+    "U",
+    (128 // 2, 1, 1),
+    (256 // 2, 3, 1),
+    "S",
+    # 252 = 1 + 3 + (4+7) + (4+7*2) + (4+7*8) + (4+7*8) + (4+7*4) + 19 + 5 + 19 + 5 + 19 ?
 ]
 
 
@@ -156,7 +188,7 @@ class YOLOv3(nn.Module):
             print(f"layer {i}: ", x.shape)
 
             # skip layers are connected to ["B", 8] based on the paper, original config file 
-            if isinstance(layer, ResidualBlock) and layer.num_repeats == 8:
+            if isinstance(layer, ResidualBlock) and layer.num_repeats != 1: # layer.num_repeats == 8:
                 route_connections.append(x)
 
             elif isinstance(layer, nn.Upsample): # if we use the Upsample
@@ -219,10 +251,10 @@ if __name__ == "__main__":
     # actual parameters
     num_classes = 1 # 20
     # YOLOv1: 448, YOLOv2/YOLOv3: 416 (with multi-scale training)
-    IMAGE_SIZE = 32 # multiples of 32 are workable with stride [32, 16, 8]
+    IMAGE_SIZE = 16 # multiples of 32 are workable with stride [32, 16, 8]
     # stride = [8, 4, 2] 
-    # stride = [16, 8, 4]
-    stride = [32, 16, 8]
+    stride = [16, 8, 4] # 16
+    # stride = [32, 16, 8]
 
     # simple test settings
     num_examples = 2
@@ -233,7 +265,6 @@ if __name__ == "__main__":
     x = torch.randn((num_examples, num_channels, IMAGE_SIZE, IMAGE_SIZE))
     out = model(x) 
 
-    
     print("Output Shape: ")
     print("[num_examples, num_channels, feature_map, feature_map, num_classes + 5]")
     for i in range(num_channels):
@@ -256,17 +287,20 @@ if __name__ == "__main__":
 # layer 8:  torch.Size([2, 512, 2, 2])
 # layer 9:  torch.Size([2, 1024, 1, 1])
 # layer 10:  torch.Size([2, 1024, 1, 1])
+
 # layer 11:  torch.Size([2, 512, 1, 1])
 # layer 12:  torch.Size([2, 1024, 1, 1])
 # layer 13:  torch.Size([2, 1024, 1, 1])
 # layer 14:  torch.Size([2, 512, 1, 1])
 # layer 16:  torch.Size([2, 256, 1, 1])
+
 # layer 17:  torch.Size([2, 256, 2, 2])
 # layer 18:  torch.Size([2, 256, 2, 2])
 # layer 19:  torch.Size([2, 512, 2, 2])
 # layer 20:  torch.Size([2, 512, 2, 2])
 # layer 21:  torch.Size([2, 256, 2, 2])
 # layer 23:  torch.Size([2, 128, 2, 2])
+
 # layer 24:  torch.Size([2, 128, 4, 4])
 # layer 25:  torch.Size([2, 128, 4, 4])
 # layer 26:  torch.Size([2, 256, 4, 4])
@@ -291,17 +325,20 @@ if __name__ == "__main__":
 # layer 8:  torch.Size([2, 512, 26, 26])
 # layer 9:  torch.Size([2, 1024, 13, 13])
 # layer 10:  torch.Size([2, 1024, 13, 13])
+
 # layer 11:  torch.Size([2, 512, 13, 13])
 # layer 12:  torch.Size([2, 1024, 13, 13])
 # layer 13:  torch.Size([2, 1024, 13, 13])
 # layer 14:  torch.Size([2, 512, 13, 13])
 # layer 16:  torch.Size([2, 256, 13, 13])
+
 # layer 17:  torch.Size([2, 256, 26, 26])
 # layer 18:  torch.Size([2, 256, 26, 26])
 # layer 19:  torch.Size([2, 512, 26, 26])
 # layer 20:  torch.Size([2, 512, 26, 26])
 # layer 21:  torch.Size([2, 256, 26, 26])
 # layer 23:  torch.Size([2, 128, 26, 26])
+
 # layer 24:  torch.Size([2, 128, 52, 52])
 # layer 25:  torch.Size([2, 128, 52, 52])
 # layer 26:  torch.Size([2, 256, 52, 52])
