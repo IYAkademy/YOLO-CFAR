@@ -61,3 +61,5 @@ def main(max_iter=1, file_type='jpg'):
 if __name__ == '__main__':
     # testing(1, 'jpg')
     main(1600, 'jpg')
+
+    
