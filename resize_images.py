@@ -1,6 +1,21 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 29 18:30:27 2022
+
+@author: Paul
+@file: resize_images.py
+@dependencies:
+    env pt3.7
+    python 3.7.13
+    torch >= 1.7.1
+    torchvision >= 0.8.2
+    Pillow >= 8.1.0
+
+Resize image to a certain size
+"""
 # import the required libraries
 import torchvision.transforms as T # for resizing the images
-from PIL import Image # for loading and saving the images
+from PIL import Image              # for loading and saving the images
 
 # test the basic functionality of resizing an image to certain size
 def testing(i=1, file_type='jpg'):
