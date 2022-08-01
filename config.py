@@ -28,29 +28,39 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 NUM_WORKERS = 1      # 4
 BATCH_SIZE = 16      # 32
-IMAGE_SIZE = 16     # 416
+IMAGE_SIZE = 416     # 416
 NUM_CLASSES = 1     # PASCAL VOV has 20 classes, MS COCO has 80 classes
-LEARNING_RATE = 3e-4 # 3e-5
+LEARNING_RATE = 1e-4 # 3e-5
+
 WEIGHT_DECAY = 0     # 1e-4, 5e-4
-NUM_EPOCHS = 10      # 1000
+NUM_EPOCHS = 1      # 1000
 CONF_THRESHOLD = 0.4 # 0.6
 MAP_IOU_THRESH = 0.5 
 NMS_IOU_THRESH = 0.45 
-# S = [IMAGE_SIZE // 32, IMAGE_SIZE // 16, IMAGE_SIZE // 8] # [13, 26, 52]
-S = [IMAGE_SIZE // 8, IMAGE_SIZE // 4, IMAGE_SIZE // 2] # [2, 4, 8]
+
+stride = [32, 16, 8] 
+S = [IMAGE_SIZE // stride[0], IMAGE_SIZE // stride[1], IMAGE_SIZE // stride[2]] # [13, 26, 52]
+# S = [IMAGE_SIZE // 8, IMAGE_SIZE // 4, IMAGE_SIZE // 2] # [2, 4, 8]
+
 PIN_MEMORY = False # True
 LOAD_MODEL = False # True
-SAVE_MODEL = True
+SAVE_MODEL = False # True
+
 # "D:/Datasets/PASCAL_VOC/checkpoint.pth.tar", "D:/Datasets/RD_maps/checkpoint.pth.tar"
 CHECKPOINT_FILE = "D:/Datasets/RD_maps/checkpoint.pth.tar" # 
-IMG_DIR = DATASET + "/images/"   # "/images/"
+IMG_DIR = DATASET + "/scaled_colors/"   # "/images/"
 LABEL_DIR = DATASET + "/labels/" # "/labels/"
 
+# how we handle the anchor boxes? we will specify the anchor boxes in the following manner as a list of lists 
+# of tuples, where each tuple corresponds to the width and the height of a anchor box relative to the image size 
+# and each list grouping together three tuples correspond to the anchors used on a specific prediction scale
+
 # ANCHORS = [
-#     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)],
-#     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)],
-#     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)],
-# ]  # Note these have been rescaled to be between [0, 1]
+#     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)],  # largest anchor boxes
+#     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], # medium anchor boxes
+#     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], # small anchor boxes
+# ]  
+# note these anchors above are the ones used in the original paper and have been rescaled to be between [0, 1]
 
 ANCHORS = [
     [(0.1250, 0.1250), (0.1250, 0.1250), (0.1250, 0.1250)],
@@ -58,7 +68,8 @@ ANCHORS = [
     [(0.1250, 0.1250), (0.1250, 0.1250), (0.1250, 0.1250)],
 ]
 
-scale = 1.1
+# scale cannot be lower than 1.0, otherwise would encounter ValueError: Requested crop size (416, 416) is larger than the image size (332, 332)
+scale = 1.0 # 1.1, 1.2 
 train_transforms = A.Compose(
     [
         A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale)),
@@ -87,7 +98,7 @@ train_transforms = A.Compose(
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
         ToTensorV2(),
     ],
-    bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[],),
+    # bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[],), # transform on bbox_params would cause unknown error
 )
 test_transforms = A.Compose(
     [
@@ -98,8 +109,11 @@ test_transforms = A.Compose(
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
         ToTensorV2(),
     ],
-    bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[]),
+    # bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[]), # transform on bbox_params would cause unknown error
 )
+
+# ValueError: Expected y_max for bbox (0.375, 0.9375, 0.5, 1.0625, 0.0) to be in the range [0.0, 1.0], got 1.0625.
+# train_transforms, test_transforms = None, None # transform would cause unknown error
 
 CLASSES = [
     "target"
@@ -130,7 +144,7 @@ CLASSES = [
 # ]
 
 # COCO_LABELS
-# COCO_LABELS = [
+# CLASSES = [
 #     'person',
 #     'bicycle',
 #     'car',
@@ -212,3 +226,4 @@ CLASSES = [
 #     'hair drier',
 #     'toothbrush'
 # ]
+
