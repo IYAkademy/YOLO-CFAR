@@ -51,8 +51,8 @@ class YOLODataset(Dataset):
         img_dir, 
         label_dir, 
         anchors, 
-        image_size=16, # image_size=416, 
-        S=[2, 4, 8],   # S=[13, 26, 52], 
+        image_size=416, # image_size=416, 
+        S=[13, 26, 52],   # S=[2, 4, 8], 
         C=1, # C=20, 
         transform=None,
     ):
@@ -60,7 +60,7 @@ class YOLODataset(Dataset):
         self.img_dir = img_dir
         self.label_dir = label_dir
         self.image_size = image_size #
-        self.transform = transform   #
+        self.transform = transform   # transform
         self.S = S                   # a list of grid sizes, S = [image_size // 32, image_size // 16, image_size // 8]
         # put all the anchors together for all 3 scales, each scale have 3 anchors stored in anchors[i]
         # combine the list below to a tensor of shape (9,2)
@@ -155,6 +155,11 @@ class YOLODataset(Dataset):
                 # the anchor taken is the one that take out from the scale_idx, then take out the specific anchor on this scale
                 # targets[scale_idx] is checking in the list of diff target tensors, here we're taking out which anchor on that 
                 # particular scale, then we're taking out the i, j for the particular cells, and we're taking out 0 for P(Object)
+
+                # 
+                #   File "d:\BeginnerPythonProjects\YOLOv3-PyTorch\dataset.py", line 163, in __getitem__
+                #     anchor_taken = targets[scale_idx][anchor_on_scale, i, j, 0] # e.g. originally tensor(0.)
+                # IndexError: index 13 is out of bounds for dimension 2 with size 13
                 anchor_taken = targets[scale_idx][anchor_on_scale, i, j, 0] # e.g. originally tensor(0.)
 
                 # it might be the case that this anchor is already been taken by another object, but it's super rare that you have 
@@ -191,8 +196,10 @@ class YOLODataset(Dataset):
                 # then we're gonna ignore this prediction, by setting the P(Object) to -1
                 elif not anchor_taken and iou_anchors[anchor_idx] > self.ignore_iou_thresh:
                     targets[scale_idx][anchor_on_scale, i, j, 0] = -1 # ignore prediction
-        
-        # in the end, we're gonna return the <class 'torch.Tensor'> type image and <class 'tuple'> type targets
+
+        # print(f"image shape: {image.shape}") # NOTE (416, 416, 3)
+        # print(f"image type: {type(image)}")  # NOTE <class 'numpy.ndarray'> ??
+        # in the end, we're gonna return the <class 'torch.Tensor'> type image?? and <class 'tuple'> type targets
         return image, tuple(targets)
 
 
@@ -201,41 +208,54 @@ def test():
 
     transform = config.test_transforms
 
-    S = [2, 4, 8] # S = [13, 26, 52]
+    # S = [2, 4, 8] 
+    # S = [13, 26, 52]
+    S = config.S 
 
     # PASCAL VOC "D:/Datasets/PASCAL_VOC/train.csv", "D:/Datasets/PASCAL_VOC/images", "D:/Datasets/PASCAL_VOC/labels",
     # MS COCO    "COCO/train.csv", "COCO/images/images/", "COCO/labels/labels_new/"
     dataset = YOLODataset(
         "D:/Datasets/RD_maps/train.csv", # csv_file 
-        "D:/Datasets/RD_maps/images",    # img_dir 
+        "D:/Datasets/RD_maps/scaled_colors",    # img_dir 
         "D:/Datasets/RD_maps/labels",    # label_dir 
         S=S, # S=[13, 26, 52],   
         anchors=anchors, 
         transform=transform, 
     )
-    # S = [2, 4, 8] # S = [13, 26, 52]
     scaled_anchors = torch.tensor(anchors) / (1 / torch.tensor(S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2))
     loader = DataLoader(dataset=dataset, batch_size=1, shuffle=True)
 
     counter = 0 # count number of tests
     for x, y in loader:
-        counter += 1 
+        # print(f"x[0] shape: {x[0].shape}") # NOTE torch.Size([416, 416, 3])
         boxes = []
 
         for i in range(y[0].shape[1]):
             anchor = scaled_anchors[i]
-            print(f"anchor.shape: {anchor.shape}")
+            print(f"anchor.shape: {anchor.shape}") # torch.Size([3, 2])
             print(f"y[{i}].shape: {y[i].shape}")
+            # y[0].shape: torch.Size([1, 3, 13, 13, 6])
+            # y[1].shape: torch.Size([1, 3, 26, 26, 6])
+            # y[2].shape: torch.Size([1, 3, 52, 52, 6])
             boxes += cells_to_bboxes(y[i], is_preds=False, S=y[i].shape[2], anchors=anchor)[0]
 
         boxes = nms(boxes, iou_threshold=1, threshold=0.7, box_format="midpoint")
         print(f"boxes: {boxes}")
-        plot_image(x[0].permute(1, 2, 0).to("cpu"), boxes)
+        # plot_image(x[0].permute(1, 2, 0).to("cpu"), boxes) # torch.Size([416, 416, 3])
+
+        # 
+        # TypeError: Invalid shape (3, 416, 416) for image data
+
+        # x[0].permute(0, 1, 2).shape is the original shape with torch.Size([3, 416, 416]) and it's an Invalid shape for image data
+        # so x[0].permute(1, 2, 0).shape is the valid shape with torch.Size([416, 416, 3]) 
+        print("original shape: ", x[0].permute(0, 1, 2).shape) # torch.Size([3, 416, 416])
+        plot_image(x[0].permute(1, 2, 0).to("cpu"), boxes) # 
         print("-----------------------------------------")
 
+        counter += 1 
         if counter == 1: break # run the test for some times then we stop
 
-        # sometimes would run into out of bound ValueError
+        # sometimes would run into out of bound ValueError, NOTE probabily caused by transforms, scale, and bbox_params settings!
         # File "C:\Users\paulc\.conda\envs\pt3.7\lib\site-packages\albumentations\augmentations\bbox_utils.py", line 330, in check_bbox
         #     "to be in the range [0.0, 1.0], got {value}.".format(bbox=bbox, name=name, value=value)
         # ValueError: Expected x_max for bbox (0.9375, 0.875, 1.0625, 1.0, 0.0) to be in the range [0.0, 1.0], got 1.0625.
@@ -243,6 +263,5 @@ def test():
 
 if __name__ == "__main__":
     test()
-
 
     
