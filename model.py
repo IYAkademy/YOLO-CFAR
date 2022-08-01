@@ -59,34 +59,34 @@ config = [
     # 252 = 1 + 3 + (4+7) + (4+7*2) + (4+7*8) + (4+7*8) + (4+7*4) + 19 + 5 + 19 + 5 + 19 ?
 ]
 
-config = [
-    (32 // 2, 3, 1),
-    (64 // 2, 3, 2),
-    ["B", 1],     # (64, 3, 2) + ["B", 1] is the Res1
-    (128, 3, 2),
-    ["B", 2],     # (128, 3, 2) + ["B", 2] is th Res2
-    # (256, 3, 2),
-    # ["B", 8],     # (256, 3, 2) + ["B", 8] is th Res8
-    (512, 3, 2),
-    ["B", 4],     # (512, 3, 2) + ["B", 8] is th Res8
-    (1024 // 2, 3, 2),
-    ["B", 1],     # ["B", 4], to this point is Darknet-53, which has 53 layers?
-    # 52 = 1 + (1 + 1*2) + (1 + 2*2) + (1 + 8*2) + (1 + 8*2) + (1 + 4*2) ?
-    (512 // 2, 1, 1),
-    (1024, 3, 1),
-    "S",
-    (256, 1, 1),
-    "U",
-    (256 // 2, 1, 1),
-    (512 // 2, 3, 1),
-    "S",
-    (128 // 2, 1, 1), # 
-    "U",
-    (128 // 2, 1, 1),
-    (256 // 2, 3, 1),
-    "S",
-    # 252 = 1 + 3 + (4+7) + (4+7*2) + (4+7*8) + (4+7*8) + (4+7*4) + 19 + 5 + 19 + 5 + 19 ?
-]
+# config = [
+#     (32 // 2, 3, 1),
+#     (64 // 2, 3, 2),
+#     ["B", 1],     # (64, 3, 2) + ["B", 1] is the Res1
+#     (128, 3, 2),
+#     ["B", 2],     # (128, 3, 2) + ["B", 2] is th Res2
+#     # (256, 3, 2),
+#     # ["B", 8],     # (256, 3, 2) + ["B", 8] is th Res8
+#     (512, 3, 2),
+#     ["B", 4],     # (512, 3, 2) + ["B", 8] is th Res8
+#     (1024 // 2, 3, 2),
+#     ["B", 1],     # ["B", 4], to this point is Darknet-53, which has 53 layers?
+#     # 52 = 1 + (1 + 1*2) + (1 + 2*2) + (1 + 8*2) + (1 + 8*2) + (1 + 4*2) ?
+#     (512 // 2, 1, 1),
+#     (1024, 3, 1),
+#     "S",
+#     (256, 1, 1),
+#     "U",
+#     (256 // 2, 1, 1),
+#     (512 // 2, 3, 1),
+#     "S",
+#     (128 // 2, 1, 1), # 
+#     "U",
+#     (128 // 2, 1, 1),
+#     (256 // 2, 3, 1),
+#     "S",
+#     # 252 = 1 + 3 + (4+7) + (4+7*2) + (4+7*8) + (4+7*8) + (4+7*4) + 19 + 5 + 19 + 5 + 19 ?
+# ]
 
 
 class CNNBlock(nn.Module):
@@ -185,10 +185,11 @@ class YOLOv3(nn.Module):
             # calling layer(x) is equivalent to calling layers.__call__(x), and __call__() is actually calling layer.forward(x)
             # which is defined in class layer(nn.Module), but in practice we should use layer(x) rather than layer.forward(x)
             x = layer(x) # 
-            print(f"layer {i}: ", x.shape)
+            # print(f"layer {i}: ", x.shape) # layer 0:  torch.Size([16, 32, 416, 416])
 
             # skip layers are connected to ["B", 8] based on the paper, original config file 
-            if isinstance(layer, ResidualBlock) and layer.num_repeats != 1: # layer.num_repeats == 8:
+            # if isinstance(layer, ResidualBlock) and layer.num_repeats != 1: # 
+            if isinstance(layer, ResidualBlock) and layer.num_repeats == 8:
                 route_connections.append(x)
 
             elif isinstance(layer, nn.Upsample): # if we use the Upsample
@@ -251,17 +252,17 @@ if __name__ == "__main__":
     # actual parameters
     num_classes = 1 # 20
     # YOLOv1: 448, YOLOv2/YOLOv3: 416 (with multi-scale training)
-    IMAGE_SIZE = 16 # multiples of 32 are workable with stride [32, 16, 8]
+    IMAGE_SIZE = 416 # multiples of 32 are workable with stride [32, 16, 8]
     # stride = [8, 4, 2] 
-    stride = [16, 8, 4] # 16
-    # stride = [32, 16, 8]
+    # stride = [16, 8, 4] # 16
+    stride = [32, 16, 8] # 32
 
     # simple test settings
-    num_examples = 2
+    num_examples = 16 # batch size
     num_channels = 3 # num_anchors
     
     model = YOLOv3(num_classes=num_classes) # initialize a YOLOv3 model as model
-    # simple test with random inputs of 2 examples, 3 channels, and IMAGE_SIZE-by-IMAGE_SIZE input
+    # simple test with random inputs of 16 examples, 3 channels, and IMAGE_SIZE-by-IMAGE_SIZE input
     x = torch.randn((num_examples, num_channels, IMAGE_SIZE, IMAGE_SIZE))
     out = model(x) 
 
@@ -270,43 +271,42 @@ if __name__ == "__main__":
     for i in range(num_channels):
         print(out[i].shape)
     
-    assert out[0].shape == (2, 3, IMAGE_SIZE//stride[0], IMAGE_SIZE//stride[0], num_classes + 5) # [2, 3, 13, 13, num_classes + 5]
-    assert out[1].shape == (2, 3, IMAGE_SIZE//stride[1], IMAGE_SIZE//stride[1], num_classes + 5) # [2, 3, 26, 26, num_classes + 5]
-    assert out[2].shape == (2, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5) # [2, 3, 52, 52, num_classes + 5]
+    assert out[0].shape == (num_examples, 3, IMAGE_SIZE//stride[0], IMAGE_SIZE//stride[0], num_classes + 5) # [2, 3, 13, 13, num_classes + 5]
+    assert out[1].shape == (num_examples, 3, IMAGE_SIZE//stride[1], IMAGE_SIZE//stride[1], num_classes + 5) # [2, 3, 26, 26, num_classes + 5]
+    assert out[2].shape == (num_examples, 3, IMAGE_SIZE//stride[2], IMAGE_SIZE//stride[2], num_classes + 5) # [2, 3, 52, 52, num_classes + 5]
     print("Success!")
 
 
-# layer 0:  torch.Size([2, 32, 32, 32])
-# layer 1:  torch.Size([2, 64, 16, 16])
-# layer 2:  torch.Size([2, 64, 16, 16])
-# layer 3:  torch.Size([2, 128, 8, 8])
-# layer 4:  torch.Size([2, 128, 8, 8])
-# layer 5:  torch.Size([2, 256, 4, 4])
-# layer 6:  torch.Size([2, 256, 4, 4])
-# layer 7:  torch.Size([2, 512, 2, 2])
-# layer 8:  torch.Size([2, 512, 2, 2])
-# layer 9:  torch.Size([2, 1024, 1, 1])
+# layer 0:  torch.Size([2, 16, 16, 16])
+# layer 1:  torch.Size([2, 32, 8, 8])
+# layer 2:  torch.Size([2, 32, 8, 8])
+# layer 3:  torch.Size([2, 128, 4, 4])
+# layer 4:  torch.Size([2, 128, 4, 4])
+# layer 5:  torch.Size([2, 512, 2, 2])
+# layer 6:  torch.Size([2, 512, 2, 2])
+# layer 7:  torch.Size([2, 512, 1, 1])
+# layer 8:  torch.Size([2, 512, 1, 1])
+
+# layer 9:  torch.Size([2, 256, 1, 1])
 # layer 10:  torch.Size([2, 1024, 1, 1])
+# layer 11:  torch.Size([2, 1024, 1, 1])
+# layer 12:  torch.Size([2, 512, 1, 1])
+# layer 14:  torch.Size([2, 256, 1, 1])
 
-# layer 11:  torch.Size([2, 512, 1, 1])
-# layer 12:  torch.Size([2, 1024, 1, 1])
-# layer 13:  torch.Size([2, 1024, 1, 1])
-# layer 14:  torch.Size([2, 512, 1, 1])
-# layer 16:  torch.Size([2, 256, 1, 1])
-
+# layer 15:  torch.Size([2, 256, 2, 2])
+# layer 16:  torch.Size([2, 128, 2, 2])
 # layer 17:  torch.Size([2, 256, 2, 2])
 # layer 18:  torch.Size([2, 256, 2, 2])
-# layer 19:  torch.Size([2, 512, 2, 2])
-# layer 20:  torch.Size([2, 512, 2, 2])
-# layer 21:  torch.Size([2, 256, 2, 2])
-# layer 23:  torch.Size([2, 128, 2, 2])
+# layer 19:  torch.Size([2, 128, 2, 2])
+# layer 21:  torch.Size([2, 64, 2, 2])
 
+# layer 22:  torch.Size([2, 64, 4, 4])
+# layer 23:  torch.Size([2, 64, 4, 4])
 # layer 24:  torch.Size([2, 128, 4, 4])
 # layer 25:  torch.Size([2, 128, 4, 4])
-# layer 26:  torch.Size([2, 256, 4, 4])
-# layer 27:  torch.Size([2, 256, 4, 4])
-# layer 28:  torch.Size([2, 128, 4, 4])
-# Output Shape: 
+# layer 26:  torch.Size([2, 64, 4, 4])
+
+# Output Shape:
 # [num_examples, num_channels, feature_map, feature_map, num_classes + 5]
 # torch.Size([2, 3, 1, 1, 6])
 # torch.Size([2, 3, 2, 2, 6])
@@ -314,40 +314,42 @@ if __name__ == "__main__":
 # Success!
 
 
-# layer 0:  torch.Size([2, 32, 416, 416])
-# layer 1:  torch.Size([2, 64, 208, 208])
-# layer 2:  torch.Size([2, 64, 208, 208])
-# layer 3:  torch.Size([2, 128, 104, 104])
-# layer 4:  torch.Size([2, 128, 104, 104])
-# layer 5:  torch.Size([2, 256, 52, 52])
-# layer 6:  torch.Size([2, 256, 52, 52])
-# layer 7:  torch.Size([2, 512, 26, 26])
-# layer 8:  torch.Size([2, 512, 26, 26])
-# layer 9:  torch.Size([2, 1024, 13, 13])
-# layer 10:  torch.Size([2, 1024, 13, 13])
+# layer 0:  torch.Size([16, 32, 416, 416])
+# layer 1:  torch.Size([16, 64, 208, 208])
+# layer 2:  torch.Size([16, 64, 208, 208])
+# layer 3:  torch.Size([16, 128, 104, 104])
+# layer 4:  torch.Size([16, 128, 104, 104])
+# layer 5:  torch.Size([16, 256, 52, 52])
+# layer 6:  torch.Size([16, 256, 52, 52])
+# layer 7:  torch.Size([16, 512, 26, 26])
+# layer 8:  torch.Size([16, 512, 26, 26])
+# layer 9:  torch.Size([16, 1024, 13, 13])
+# layer 10:  torch.Size([16, 1024, 13, 13])
 
-# layer 11:  torch.Size([2, 512, 13, 13])
-# layer 12:  torch.Size([2, 1024, 13, 13])
-# layer 13:  torch.Size([2, 1024, 13, 13])
-# layer 14:  torch.Size([2, 512, 13, 13])
-# layer 16:  torch.Size([2, 256, 13, 13])
+# layer 11:  torch.Size([16, 512, 13, 13])
+# layer 12:  torch.Size([16, 1024, 13, 13])
+# layer 13:  torch.Size([16, 1024, 13, 13])
+# layer 14:  torch.Size([16, 512, 13, 13])
+# layer 16:  torch.Size([16, 256, 13, 13])
 
-# layer 17:  torch.Size([2, 256, 26, 26])
-# layer 18:  torch.Size([2, 256, 26, 26])
-# layer 19:  torch.Size([2, 512, 26, 26])
-# layer 20:  torch.Size([2, 512, 26, 26])
-# layer 21:  torch.Size([2, 256, 26, 26])
-# layer 23:  torch.Size([2, 128, 26, 26])
+# layer 17:  torch.Size([16, 256, 26, 26])
+# layer 18:  torch.Size([16, 256, 26, 26])
+# layer 19:  torch.Size([16, 512, 26, 26])
+# layer 20:  torch.Size([16, 512, 26, 26])
+# layer 21:  torch.Size([16, 256, 26, 26])
+# layer 23:  torch.Size([16, 128, 26, 26])
 
-# layer 24:  torch.Size([2, 128, 52, 52])
-# layer 25:  torch.Size([2, 128, 52, 52])
-# layer 26:  torch.Size([2, 256, 52, 52])
-# layer 27:  torch.Size([2, 256, 52, 52])
-# layer 28:  torch.Size([2, 128, 52, 52])
+# layer 24:  torch.Size([16, 128, 52, 52])
+# layer 25:  torch.Size([16, 128, 52, 52])
+# layer 26:  torch.Size([16, 256, 52, 52])
+# layer 27:  torch.Size([16, 256, 52, 52])
+# layer 28:  torch.Size([16, 128, 52, 52])
 
 # Output Shape: 
 # [num_examples, num_channels, feature_map, feature_map, num_classes + 5]
-# torch.Size([2, 3, 13, 13, 6])
-# torch.Size([2, 3, 26, 26, 6])
-# torch.Size([2, 3, 52, 52, 6])
+# torch.Size([16, 3, 13, 13, 6])
+# torch.Size([16, 3, 26, 26, 6])
+# torch.Size([16, 3, 52, 52, 6])
+
 # Success!
+
