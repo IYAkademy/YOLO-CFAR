@@ -35,6 +35,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 import os
+import time
 
 # set to Ture so that we don't get any errors when we loading the images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -156,6 +157,8 @@ class YOLODataset(Dataset):
                 # targets[scale_idx] is checking in the list of diff target tensors, here we're taking out which anchor on that 
                 # particular scale, then we're taking out the i, j for the particular cells, and we're taking out 0 for P(Object)
 
+                if i == S or j == S:
+                    print(f"anchor_idx {anchor_idx}: scale_idx {scale_idx}, anchor_on_scale {anchor_on_scale}, i {i}, j {j}")
                 # 
                 #   File "d:\BeginnerPythonProjects\YOLOv3-PyTorch\dataset.py", line 163, in __getitem__
                 #     anchor_taken = targets[scale_idx][anchor_on_scale, i, j, 0] # e.g. originally tensor(0.)
@@ -252,8 +255,8 @@ def test():
         plot_image(x[0].permute(1, 2, 0).to("cpu"), boxes) # 
         print("-----------------------------------------")
 
-        counter += 1 
-        if counter == 1: break # run the test for some times then we stop
+        # counter += 1 
+        # if counter == 1: break # run the test for some times then we stop
 
         # sometimes would run into out of bound ValueError, NOTE probabily caused by transforms, scale, and bbox_params settings!
         # File "C:\Users\paulc\.conda\envs\pt3.7\lib\site-packages\albumentations\augmentations\bbox_utils.py", line 330, in check_bbox
@@ -263,5 +266,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-    
