@@ -31,16 +31,23 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm # for progress bar
 
-# import gc
 
 torch.backends.cudnn.benchmark = True
 
 def train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors):
     loop = tqdm(train_loader, leave=True)
     losses = []
-    for batch_idx, (x, y) in enumerate(loop):
+    # for batch_idx, (x, y) in enumerate(loop):
+    # x, y = image, tuple(targets)
+    for x, y in loop:
+        # print(x.shape) # current shape: torch.Size([16, 416, 416, 3]), correct shape: torch.Size([16, 3, 416, 416])
+        # x.permute(0, 3, 1, 2) # torch.Size([16, 416, 416, 3]) --> torch.Size([16, 3, 416, 416])
+
+        # RuntimeError: Input type (torch.cuda.ByteTensor) and weight type (torch.cuda.HalfTensor) should be the same
+
         x = x.to(config.DEVICE)
-        y0, y1, y2 = (y[0].to(config.DEVICE), y[1].to(config.DEVICE), y[2].to(config.DEVICE), )
+        # y0, y1, y2 = (y[0].to(config.DEVICE), y[1].to(config.DEVICE), y[2].to(config.DEVICE), )
+        y0, y1, y2 = y[0].to(config.DEVICE), y[1].to(config.DEVICE), y[2].to(config.DEVICE)
 
         with torch.cuda.amp.autocast():
             out = model(x)
@@ -80,7 +87,8 @@ def main():
     scaler = torch.cuda.amp.GradScaler()
 
     # first test with "/8examples.csv" and "/100examples.csv" before moving on to "/train.csv" and "/test.csv"
-    train_loader, test_loader, train_eval_loader = get_loaders(
+    # train_loader, test_loader, train_eval_loader = get_loaders(
+    train_loader, test_loader = get_loaders(
         train_csv_path=config.DATASET + "/train.csv", test_csv_path=config.DATASET + "/test.csv"
     )
 
@@ -90,32 +98,56 @@ def main():
     scaled_anchors = (torch.tensor(config.ANCHORS) * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)).to(config.DEVICE)
 
     for epoch in range(config.NUM_EPOCHS):
-        # plot_couple_examples(model, test_loader, 0.6, 0.5, scaled_anchors)
+        # plot_couple_examples(model=model, loader=test_loader, thresh=0.6, iou_thresh=0.5, anchors=scaled_anchors)
+
         train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
 
         if config.SAVE_MODEL:
-            save_checkpoint(model, optimizer, filename=f"D:/Datasets/PASCAL_VOC/checkpoint.pth.tar")
+            # for Pascal VOC Dataset, "D:/Datasets/PASCAL_VOC/checkpoint.pth.tar"
+            # for RD_map Dataset, "D:/Datasets/RD_maps/checks/checkpoint.pth.tar"
+            save_checkpoint(model, optimizer, filename=f"D:/Datasets/RD_maps/checks/checkpoint.pth.tar")
 
         print(f"Currently epoch {epoch}")
         print("On Train loader:")
         check_class_accuracy(model, train_loader, threshold=config.CONF_THRESHOLD)
-        print("On Train Eval loader:")
-        check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
 
-        if epoch % 10 == 0 and epoch > 0:
+        # print("On Train Eval loader:")
+        # check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
+
+        print("On Test loader:")
+        check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
+
+        pred_boxes, true_boxes = get_evaluation_bboxes(
+            loader=test_loader,
+            model=model,
+            iou_threshold=config.NMS_IOU_THRESH,
+            anchors=config.ANCHORS,
+            threshold=config.CONF_THRESHOLD,
+        )
+        mapval = mean_average_precision(
+            pred_boxes=pred_boxes,
+            true_boxes=true_boxes,
+            iou_threshold=config.MAP_IOU_THRESH,
+            box_format="midpoint",
+            num_classes=config.NUM_CLASSES,
+        )
+        print(f"MAP: {mapval.item()}")
+
+        if epoch % 100 == 0 and epoch > 0:
             print("On Test loader:")
             check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 
+            # it took around at least 10+ minutes to compute mAP
             pred_boxes, true_boxes = get_evaluation_bboxes(
-                test_loader,
-                model,
+                loader=test_loader,
+                model=model,
                 iou_threshold=config.NMS_IOU_THRESH,
                 anchors=config.ANCHORS,
                 threshold=config.CONF_THRESHOLD,
             )
             mapval = mean_average_precision(
-                pred_boxes,
-                true_boxes,
+                pred_boxes=pred_boxes,
+                true_boxes=true_boxes,
                 iou_threshold=config.MAP_IOU_THRESH,
                 box_format="midpoint",
                 num_classes=config.NUM_CLASSES,
@@ -126,6 +158,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
     
