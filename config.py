@@ -35,7 +35,7 @@ LEARNING_RATE = 3e-5 # 3e-5
 
 WEIGHT_DECAY = 1e-4     # 1e-4, 5e-4
 NUM_EPOCHS = 1      # 1000
-CONF_THRESHOLD = 0.4 # 0.6
+CONF_THRESHOLD = 0.2 # 0.6
 MAP_IOU_THRESH = 0.5 
 NMS_IOU_THRESH = 0.45 
 
@@ -76,7 +76,7 @@ scale = 1.0 # 1.1, 1.2
 
 # Albumentations Doc (https://vfdev-5-albumentations.readthedocs.io/en/docs_pytorch_fix/api/augmentations.html)
 train_transforms = A.Compose( # Compose transforms and handle all transformations regarding bounding boxes
-    transforms=[
+    [
         # Resizing transforms, NOTE spatial augmentations could affect the size of bounding boxes 
         # Rescale an image so that maximum side is equal to max_size, while keeping the aspect ratio
         # A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale), p=1.0), 
@@ -85,11 +85,11 @@ train_transforms = A.Compose( # Compose transforms and handle all transformation
         # A.PadIfNeeded(
         #     min_height=int(IMAGE_SIZE * scale), # Minimal result image height
         #     min_width=int(IMAGE_SIZE * scale),  # Minimal result image width
-        #     border_mode=cv2.BORDER_CONSTANT,    # Flag that is used to specify the pixel extrapolation method
+        #     # border_mode=cv2.BORDER_CONSTANT,    # Flag that is used to specify the pixel extrapolation method
         # ),
 
         # Crop transforms, NOTE spatial augmentations could affect the size of bounding boxes
-        A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE, p=1.0), # Crop a random part of the input
+        # A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE, p=0.1), # Crop a random part of the input
 
         # Transforms
         # A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4), # Randomly changes the brightness, contrast, and saturation
@@ -100,21 +100,22 @@ train_transforms = A.Compose( # Compose transforms and handle all transformation
 
         # Transforms
         # A.HorizontalFlip(p=0.5),     # Randomly flip the input horizontally around the y-axis 
-        A.Blur(blur_limit=7, p=0.1), # Randomly blur the input image using a random-sized kernel
+        # A.Blur(blur_limit=7, p=0.1), # Randomly blur the input image using a random-sized kernel
         # A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.1), # Randomly apply Contrast Limited Adaptive Histogram Equalization (CLAHE)
         # A.Posterize(p=0.1),
-        A.ToGray(p=0.1),             # Randomly convert the input RGB image to grayscale
+        # A.ToGray(p=0.1),             # Randomly convert the input RGB image to grayscale
         # A.ChannelShuffle(p=0.05),    # Randomly rearrange channels of the input RGB image
 
         # Divide pixel values by 255 = 2**8 - 1, subtract mean per channel and divide by std per channel
+        # remove Normalize() may cause RuntimeError: Input type (torch.cuda.ByteTensor) and weight type (torch.cuda.HalfTensor) should be the same
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255.0, p=0.1),
         ToTensorV2(),
     ],
-    bbox_params=A.BboxParams(
-        format="yolo", 
-        # label_fields=[], 
-        # min_visibility=0.4, 
-    ), 
+    # bbox_params=A.BboxParams(
+    #     format="yolo", 
+    #     label_fields=[], 
+    #     min_visibility=0.4, 
+    # ), 
     # transform on bbox_params would cause some unknown value errors
     # ValueError: Expected x_max for bbox (0.8774, 0.8149, 1.0024, 0.9399, 0.0) to be in the range [0.0, 1.0]
 )
@@ -130,11 +131,11 @@ test_transforms = A.Compose(
         A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,), 
         ToTensorV2(), 
     ],
-    bbox_params=A.BboxParams(
-        format="yolo", 
-        # label_fields=[],
-        # min_visibility=0.4, 
-    ), 
+    # bbox_params=A.BboxParams(
+    #     format="yolo", 
+    #     label_fields=[],
+    #     min_visibility=0.4, 
+    # ), 
     # transform on bbox_params would cause unknown error
 )
 
@@ -253,14 +254,15 @@ CLASSES3 = [
     'toothbrush'
 ]
 
+
 # Albumentations examples (https://github.com/albumentations-team/albumentations_examples/blob/master/notebooks/example_bboxes.ipynb)
 def test():
     # Import the required libraries, besides albumentations and cv2
     import random
-    from PIL import Image
+    # from PIL import Image
     import numpy as np
     from matplotlib import pyplot as plt
-
+    
     # Define functions to visualize bounding boxes and class labels on an image
     BOX_COLOR = (255, 0, 0)      # Red
     TEXT_COLOR = (255, 255, 255) # White
@@ -325,32 +327,36 @@ def test():
     category_id_to_name = {0: 'target'}
 
     # Visuaize the original image with bounding boxes
-    visualize(image, bboxes, category_ids, category_id_to_name)
+    # visualize(image, bboxes, category_ids, category_id_to_name)
 
     # Define an augmentation pipeline
+    tscale = 1.5
     transform = A.Compose(
         [
-            A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale), p=1.0), 
-            A.PadIfNeeded(min_height=int(IMAGE_SIZE * scale), min_width=int(IMAGE_SIZE * scale), border_mode=cv2.BORDER_CONSTANT, ),
+            # A.LongestMaxSize(max_size=int(IMAGE_SIZE * tscale), p=1.0), 
+            # A.PadIfNeeded(min_height=int(IMAGE_SIZE * tscale), min_width=int(IMAGE_SIZE * tscale), border_mode=cv2.BORDER_CONSTANT, ),
 
-            A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE, p=1.0), 
+            # A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE, p=1.0), 
 
-            A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=1.0), 
+            # A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=1.0), 
             
-            A.ShiftScaleRotate(rotate_limit=20, p=1.0, border_mode=cv2.BORDER_CONSTANT), 
-            A.HorizontalFlip(p=1.0),     
-            A.Blur(blur_limit=7, p=1.0), 
-            A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=1.0), 
-            A.Posterize(p=1.0),
-            A.ToGray(p=1.0),             
-            A.ChannelShuffle(p=1.0), 
-            A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255.0, p=1.0),
+            # A.ShiftScaleRotate(rotate_limit=20, p=1.0, border_mode=cv2.BORDER_CONSTANT), 
+            # A.HorizontalFlip(p=1.0), 
+            # A.Blur(blur_limit=7, p=1.0), 
+            # A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=1.0), 
+            # A.Posterize(p=1.0),
+            # A.ToGray(p=1.0),             
+            # A.ChannelShuffle(p=1.0), 
+            # A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255.0, p=1.0),
         ],
-        bbox_params=A.BboxParams(format='coco', label_fields=['category_ids']),
+        bbox_params=A.BboxParams(
+            format='coco', 
+            label_fields=['category_ids']
+        ),
     )
     random.seed(33)
     transformed = transform(image=image, bboxes=bboxes, category_ids=category_ids)
-    visualize(transformed['image'], transformed['bboxes'], transformed['category_ids'], category_id_to_name, )
+    visualize(transformed['image'], transformed['bboxes'], transformed['category_ids'], category_id_to_name)
     # Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers)
 
 
