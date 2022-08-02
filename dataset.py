@@ -150,9 +150,11 @@ class YOLODataset(Dataset):
                 # how many cells there are in this particular scale?
                 # (y, x) are relative coordinates between [0, 1] and we want to get the absolute coordinates (i, j) in the image
                 # i tells us which y cell, and j tells us which x cell
-                if x >= 1: x = 0.99
-                if y >= 1: y = 0.99
-                i, j = math.floor(S * y), math.floor(S * x) # e.g. x = 0.5, S = 13 --> int(6.5) = 6
+                def compute_i_j():
+                    if x >= 1: x = 0.99
+                    if y >= 1: y = 0.99
+                    i, j = math.floor(S * y), math.floor(S * x) 
+                i, j = int(S * y), int(S * x) # e.g. x = 0.5, S = 13 --> int(6.5) = 6
                 # e.g. y, x = 0.625, 0.5 (should be the same as the box's y, x above)
                 # e.g. i, j = 1, 1
 
