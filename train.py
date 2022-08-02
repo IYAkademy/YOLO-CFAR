@@ -115,7 +115,6 @@ def main():
         # print("On Train Eval loader:")
         # check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
 
-
         # just testing for 1 epoch
         # print("On Test loader:")
         # check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
@@ -134,9 +133,9 @@ def main():
         #     box_format="midpoint",
         #     num_classes=config.NUM_CLASSES,
         # )
-        # print(f"MAP: {mapval.item()}")
+        # print(f"mAP: {mapval.item()}")
 
-        if epoch % 100 == 0 and epoch > 0:
+        if epoch % 10 == 0 and epoch > 0:
             print("On Test loader:")
             check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 
@@ -155,7 +154,7 @@ def main():
                 box_format="midpoint",
                 num_classes=config.NUM_CLASSES,
             )
-            print(f"MAP: {mapval.item()}")
+            print(f"mAP: {mapval.item()}")
 
 
 
