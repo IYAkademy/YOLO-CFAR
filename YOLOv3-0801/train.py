@@ -97,7 +97,7 @@ def main():
 
     scaled_anchors = (torch.tensor(config.ANCHORS) * torch.tensor(config.S).unsqueeze(1).unsqueeze(1).repeat(1, 3, 2)).to(config.DEVICE)
 
-    for epoch in range(config.NUM_EPOCHS):
+    for epoch in range(1, config.NUM_EPOCHS + 1):
         # plot_couple_examples(model=model, loader=test_loader, thresh=0.6, iou_thresh=0.5, anchors=scaled_anchors)
 
         train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
@@ -111,27 +111,29 @@ def main():
         print("On Train loader:")
         check_class_accuracy(model, train_loader, threshold=config.CONF_THRESHOLD)
 
+        # train eval caused some errors
         # print("On Train Eval loader:")
         # check_class_accuracy(model, train_eval_loader, threshold=config.CONF_THRESHOLD)
 
+        # just testing for 1 epoch
         print("On Test loader:")
         check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 
-        pred_boxes, true_boxes = get_evaluation_bboxes(
-            loader=test_loader,
-            model=model,
-            iou_threshold=config.NMS_IOU_THRESH,
-            anchors=config.ANCHORS,
-            threshold=config.CONF_THRESHOLD,
-        )
-        mapval = mean_average_precision(
-            pred_boxes=pred_boxes,
-            true_boxes=true_boxes,
-            iou_threshold=config.MAP_IOU_THRESH,
-            box_format="midpoint",
-            num_classes=config.NUM_CLASSES,
-        )
-        print(f"MAP: {mapval.item()}")
+        # pred_boxes, true_boxes = get_evaluation_bboxes(
+        #     loader=test_loader,
+        #     model=model,
+        #     iou_threshold=config.NMS_IOU_THRESH,
+        #     anchors=config.ANCHORS,
+        #     threshold=config.CONF_THRESHOLD,
+        # )
+        # mapval = mean_average_precision(
+        #     pred_boxes=pred_boxes,
+        #     true_boxes=true_boxes,
+        #     iou_threshold=config.MAP_IOU_THRESH,
+        #     box_format="midpoint",
+        #     num_classes=config.NUM_CLASSES,
+        # )
+        # print(f"mAP: {mapval.item()}")
 
         if epoch % 100 == 0 and epoch > 0:
             print("On Test loader:")
@@ -152,7 +154,7 @@ def main():
                 box_format="midpoint",
                 num_classes=config.NUM_CLASSES,
             )
-            print(f"MAP: {mapval.item()}")
+            print(f"mAP: {mapval.item()}")
 
 
 
