@@ -36,6 +36,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import os
 import time
+import math # for math.floor()
 
 # set to Ture so that we don't get any errors when we loading the images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -149,7 +150,9 @@ class YOLODataset(Dataset):
                 # how many cells there are in this particular scale?
                 # (y, x) are relative coordinates between [0, 1] and we want to get the absolute coordinates (i, j) in the image
                 # i tells us which y cell, and j tells us which x cell
-                i, j = int(S * y), int(S * x) # e.g. x = 0.5, S = 13 --> int(6.5) = 6
+                if x >= 1: x = 0.99
+                if y >= 1: y = 0.99
+                i, j = math.floor(S * y), math.floor(S * x) # e.g. x = 0.5, S = 13 --> int(6.5) = 6
                 # e.g. y, x = 0.625, 0.5 (should be the same as the box's y, x above)
                 # e.g. i, j = 1, 1
 
@@ -158,7 +161,8 @@ class YOLODataset(Dataset):
                 # particular scale, then we're taking out the i, j for the particular cells, and we're taking out 0 for P(Object)
 
                 if i == S or j == S:
-                    print(f"anchor_idx {anchor_idx}: scale_idx {scale_idx}, anchor_on_scale {anchor_on_scale}, i {i}, j {j}")
+                    print(f"anchor_idx {anchor_idx} scale_idx {scale_idx}, anchor_on_scale {anchor_on_scale}, i {i}, j {j}, y {y}, x {x}")
+                
                 # 
                 #   File "d:\BeginnerPythonProjects\YOLOv3-PyTorch\dataset.py", line 163, in __getitem__
                 #     anchor_taken = targets[scale_idx][anchor_on_scale, i, j, 0] # e.g. originally tensor(0.)
