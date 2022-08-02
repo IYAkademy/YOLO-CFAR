@@ -394,9 +394,8 @@ def check_class_accuracy(model, loader, threshold):
     tot_noobj, correct_noobj = 0, 0
     tot_obj, correct_obj = 0, 0
 
-    # for idx, (x, y) in enumerate(tqdm(loader)):
     for idx, (x, y) in enumerate(tqdm(loader)):
-        if idx == 101: break  # NOTE why break at idx == 100?
+        if idx == 101: break  # NOTE why break at idx == 100 or 101?
 
         # IndexError (https://discuss.pytorch.org/t/indexerror-index-3-is-out-of-bounds-for-dimension-0-with-size-3/39333/4)
         
@@ -406,7 +405,7 @@ def check_class_accuracy(model, loader, threshold):
 
         for i in range(3):
             y[i] = y[i].to(config.DEVICE)
-            obj = y[i][..., 0] == 1   # in paper this is Iobj_i
+            obj   = y[i][..., 0] == 1 # in paper this is Iobj_i
             noobj = y[i][..., 0] == 0 # in paper this is Iobj_i
 
             correct_class += torch.sum(
@@ -478,6 +477,7 @@ def get_loaders(train_csv_path, test_csv_path):
         anchors=config.ANCHORS,
         S=config.S, # [13, 26, 52]
         transform=config.train_transforms,
+        # transform=None, # set to None will get a RuntimeError
     )
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -495,6 +495,7 @@ def get_loaders(train_csv_path, test_csv_path):
         anchors=config.ANCHORS,
         S=config.S, # [13, 26, 52]
         transform=config.test_transforms,
+        # transform=None, # set to None will get a RuntimeError
     )
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -512,6 +513,7 @@ def get_loaders(train_csv_path, test_csv_path):
     #     anchors=config.ANCHORS,
     #     S=config.S, # [13, 26, 52]
     #     transform=config.test_transforms,
+    #     # transform=None, # set to None will get a RuntimeError
     # )
     # train_eval_loader = DataLoader(
     #     dataset=train_eval_dataset,
@@ -546,7 +548,6 @@ def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
             bboxes[i], iou_threshold=iou_thresh, threshold=thresh, box_format="midpoint",
         )
         plot_image(x[i].permute(1,2,0).detach().cpu(), nms_boxes)
-
 
 
 def seed_everything(seed=42):
