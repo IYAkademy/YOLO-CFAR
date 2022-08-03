@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 16:57:39 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: train.py
 @dependencies:
@@ -11,7 +12,7 @@ Created on Mon Jul 18 16:57:39 2022
     tqdm >= 4.56.0
     torchvision >= 0.8.2
 
-Main file for training Yolo model on Pascal VOC and COCO dataset
+Main file for training YOLOv3 model on RD maps, Pascal VOC and COCO dataset
 """
 import config # for hyper-parameter tuning stuffs
 from model import YOLOv3
@@ -135,7 +136,7 @@ def main():
         # )
         # print(f"mAP: {mapval.item()}")
 
-        if epoch % 100 == 0 and epoch > 0:
+        if epoch % 10 == 0 and epoch > 0:
             print("On Test loader:")
             check_class_accuracy(model, test_loader, threshold=config.CONF_THRESHOLD)
 

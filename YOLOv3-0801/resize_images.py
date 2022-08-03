@@ -2,6 +2,7 @@
 """
 Created on Fri Jul 29 18:30:27 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: resize_images.py
 @dependencies:
