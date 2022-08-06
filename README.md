@@ -1,5 +1,6 @@
 ## YOLO_project
-Replication / Implementation of the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" 林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。 取自 https://hdl.handle.net/11296/7n49t5 
+Replication / Implementation of the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" 
+林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。 取自 https://hdl.handle.net/11296/7n49t5 
 
 ## YOLO-CFAR paper
 The implementation is kinda based on the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" by Lin, Yu-Ting
