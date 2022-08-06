@@ -1,9 +1,8 @@
 ## YOLO_project
 Replication of the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" by Lin, Yu-Ting.
-林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。 取自 https://hdl.handle.net/11296/7n49t5 
 
 ## YOLO-CFAR paper
-The implementation is kinda based on the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" by Lin, Yu-Ting.
+The implementation is trying to replicate the results of the master thesis. 林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。取自 https://hdl.handle.net/11296/7n49t5 
 
 ### Abstract
 Constant False Alarm Rate (CFAR) detection is a common target detection algorithm in radar systems. However, non-homogeneous scanerios, 
@@ -18,7 +17,7 @@ Deep Neural Network (DNN) to further improve the performance of YOLO-CFAR. Simul
 CFAR schemes especially in non-homogeneous scanerios, furthermore, YOLO-CFAR can achieve real-time detection with 71 FPS.
 
 ## YOLOv3 references
+I just copy and paste the code from the Internet and watch youtube tutorials to built the project.
 - Redmon, Joseph and Farhadi, Ali, YOLOv3: An Incremental Improvement, April 8, 2018. (https://doi.org/10.48550/arXiv.1804.02767)
 - Ayoosh Kathuria, Whats new in YOLO v3?, April, 23, 2018. (https://towardsdatascience.com/yolo-v3-object-detection-53fb7d3bfe6b)
 - Sanna Persson, YOLOv3 from Scratch, Mar 21, 2021. (https://sannaperzon.medium.com/yolov3-implementation-with-training-setup-from-scratch-30ecb9751cb0)
-- 
