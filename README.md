@@ -7,9 +7,9 @@ Replication / Implementation of the master thesis "YOLO-CFAR: a Novel CFAR Targe
 The implementation is kinda based on the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" by Lin, Yu-Ting
 
 ### Abstract
-Constant False Alarm Rate (CFAR) detection is a common target detection algorithm in radar systems. However, non-homogeneous scanerios, such as 
-multi-target scanerios and clutter scanerios, can dramatically affect the CFAR target detection performance because of the erroneous noise level
-estimation. In order to imporve the CFAR detection performance in non-homogeneous scanerios, we propose a novel CFAR detection method, based on
+Constant False Alarm Rate (CFAR) detection is a common target detection algorithm in radar systems. However, non-homogeneous scanerios, 
+such as multi-target scanerios and clutter scanerios, can dramatically affect the CFAR target detection performance because of the erroneous 
+noise level estimation. In order to imporve the CFAR detection performance in non-homogeneous scanerios, we propose a novel CFAR detection method, based on
 a deep learning model: You Only Look Once (YOLO), called YOLO-CFAR. The proposed CFAR scheme does not require to estimate the noise level and use
 deep learning model for object detection to detect targets in RD map. The possibility of error propagation caused by inaccurate noise level estimation
 decreased, thus getting better CFAR target detection performance.
