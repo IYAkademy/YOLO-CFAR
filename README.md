@@ -2,7 +2,7 @@
 Replication of the master thesis "YOLO-CFAR: a Novel CFAR Target Detection Method Based on YOLO" by Lin, Yu-Ting.
 
 ## YOLO-CFAR paper
-The implementation is trying to replicate the results of the following master thesis: 林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。取自 https://hdl.handle.net/11296/7n49t5 
+This implementation is trying to replicate the results of the following master thesis: 林郁庭(2021)。基於YOLO之雷達目標偵測演算法。國立清華大學通訊工程研究所碩士論文，新竹市。取自 https://hdl.handle.net/11296/7n49t5 
 
 ### Abstract
 Constant False Alarm Rate (CFAR) detection is a common target detection algorithm in radar systems. However, non-homogeneous scanerios, 
