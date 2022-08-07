@@ -20,7 +20,7 @@ conventional CFAR schemes especially in non-homogeneous scanerios, furthermore, 
 
 ## YOLOv3 references
 I just copy and paste the code from the Internet and watch youtube tutorials to built the project.
-- Redmon, Joseph and Farhadi, Ali, YOLOv3: An Incremental Improvement, April 8, 2018. (https://doi.org/10.48550/arXiv.1804.02767)
-- Ayoosh Kathuria, Whats new in YOLO v3?, April, 23, 2018. (https://towardsdatascience.com/yolo-v3-object-detection-53fb7d3bfe6b)
-- Aladdin Persson, YOLOv3 from Scratch, Feb 23, 2021. (https://www.youtube.com/watch?v=Grir6TZbc1M)
+- Redmon, Joseph and Farhadi, Ali, [YOLOv3: An Incremental Improvement](https://doi.org/10.48550/arXiv.1804.02767), April 8, 2018. 
+- Ayoosh Kathuria, [Whats new in YOLO v3?](https://towardsdatascience.com/yolo-v3-object-detection-53fb7d3bfe6b), April, 23, 2018. 
+- Aladdin Persson, [YOLOv3 from Scratch](https://www.youtube.com/watch?v=Grir6TZbc1M), Feb 23, 2021. 
 - Sanna Persson, [YOLOv3 from Scratch](https://sannaperzon.medium.com/yolov3-implementation-with-training-setup-from-scratch-30ecb9751cb0), Mar 21, 2021. 
