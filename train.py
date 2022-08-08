@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 16:57:39 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: train.py
 @dependencies:
@@ -11,7 +12,7 @@ Created on Mon Jul 18 16:57:39 2022
     tqdm >= 4.56.0
     torchvision >= 0.8.2
 
-Main file for training Yolo model on Pascal VOC and COCO dataset
+Main file for training YOLOv3 model on RD maps, Pascal VOC and COCO dataset
 """
 import config # for hyper-parameter tuning stuffs
 from model import YOLOv3
@@ -102,7 +103,7 @@ def main():
 
         train_fn(train_loader, model, optimizer, loss_fn, scaler, scaled_anchors)
 
-        if config.SAVE_MODEL:
+        if config.SAVE_MODEL and epoch % 20 == 0 and epoch > 0:
             # for Pascal VOC Dataset, "D:/Datasets/PASCAL_VOC/checkpoint.pth.tar"
             # for RD_map Dataset, "D:/Datasets/RD_maps/checks/checkpoint.pth.tar"
             save_checkpoint(model, optimizer, filename=f"D:/Datasets/RD_maps/checks/checkpoint.pth.tar")

@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 17:00:55 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: utils.py
 @dependencies:
@@ -46,16 +47,14 @@ def iou_width_height(boxes1, boxes2):
 
 def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
     """
-    Video explanation of this function:
-    https://youtu.be/XXYG5ZWtjj0
+    Video explanation of this function: https://youtu.be/XXYG5ZWtjj0
 
-    This function calculates intersection over union (iou) given pred boxes
-    and target boxes.
+    This function calculates intersection over union (iou) given pred boxes and target boxes.
 
     Parameters:
-        boxes_preds (tensor): Predictions of Bounding Boxes (BATCH_SIZE, 4)
-        boxes_labels (tensor): Correct labels of Bounding Boxes (BATCH_SIZE, 4)
-        box_format (str): midpoint/corners, if boxes (x,y,w,h) or (x1,y1,x2,y2)
+        1.boxes_preds (tensor): Predictions of Bounding Boxes (BATCH_SIZE, 4)
+        2.boxes_labels (tensor): Correct labels of Bounding Boxes (BATCH_SIZE, 4)
+        3.box_format (str): midpoint/corners, if boxes (x,y,w,h) or (x1,y1,x2,y2)
 
     Returns:
         tensor: Intersection over union for all examples
@@ -95,17 +94,15 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
 
 def non_max_suppression(bboxes, iou_threshold, threshold, box_format="corners"):
     """
-    Video explanation of this function:
-    https://youtu.be/YDkjWEN8jNA
+    Video explanation of this function: https://youtu.be/YDkjWEN8jNA
 
     Does Non Max Suppression given bboxes
 
     Parameters:
-        bboxes (list): list of lists containing all bboxes with each bboxes
-        specified as [class_pred, prob_score, x1, y1, x2, y2]
-        iou_threshold (float): threshold where predicted bboxes is correct
-        threshold (float): threshold to remove predicted bboxes (independent of IoU)
-        box_format (str): "midpoint" or "corners" used to specify bboxes
+        1.bboxes (list): list of lists containing all bboxes with each bboxes specified as [class_pred, prob_score, x1, y1, x2, y2]
+        2.iou_threshold (float): threshold where predicted bboxes is correct
+        3.threshold (float): threshold to remove predicted bboxes (independent of IoU)
+        4.box_format (str): "midpoint" or "corners", if boxes (x,y,w,h) or (x1,y1,x2,y2), used to specify bboxes
 
     Returns:
         list: bboxes after performing NMS given a specific IoU threshold
@@ -139,18 +136,17 @@ def non_max_suppression(bboxes, iou_threshold, threshold, box_format="corners"):
 
 def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format="midpoint", num_classes=20):
     """
-    Video explanation of this function:
-    https://youtu.be/FppOzcDvaDI
+    Video explanation of this function: https://youtu.be/FppOzcDvaDI
 
     This function calculates mean average precision (mAP)
 
     Parameters:
-        pred_boxes (list): list of lists containing all bboxes with each bboxes
-        specified as [train_idx, class_prediction, prob_score, x1, y1, x2, y2]
-        true_boxes (list): Similar as pred_boxes except all the correct ones
-        iou_threshold (float): threshold where predicted bboxes is correct
-        box_format (str): "midpoint" or "corners" used to specify bboxes
-        num_classes (int): number of classes
+        1.pred_boxes (list): list of lists containing all bboxes with each bboxes specified as 
+            [train_idx, class_prediction, prob_score, x1, y1, x2, y2]
+        2.true_boxes (list): Similar as pred_boxes except all the correct ones
+        3.iou_threshold (float): threshold where predicted bboxes is correct
+        4.box_format (str): "midpoint" or "corners", if boxes (x,y,w,h) or (x1,y1,x2,y2), used to specify bboxes
+        5.num_classes (int): number of classes
 
     Returns:
         float: mAP value across all classes given a specific IoU threshold
@@ -166,9 +162,7 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
         detections = []
         ground_truths = []
 
-        # Go through all predictions and targets,
-        # and only add the ones that belong to the
-        # current class c
+        # go through all predictions and targets, and only add the ones that belong to the current class c
         for detection in pred_boxes:
             if detection[1] == c:
                 detections.append(detection)
@@ -177,16 +171,13 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
             if true_box[1] == c:
                 ground_truths.append(true_box)
 
-        # find the amount of bboxes for each training example
-        # Counter here finds how many ground truth bboxes we get
-        # for each training example, so let's say img 0 has 3,
-        # img 1 has 5 then we will obtain a dictionary with:
-        # amount_bboxes = {0:3, 1:5}
+        # find the amount of bboxes for each training example, Counter here finds how many ground truth bboxes 
+        # we get for each training example, so let's say img 0 has 3, img 1 has 5 then we will obtain a dictionary 
+        # with: amount_bboxes = {0:3, 1:5}
         amount_bboxes = Counter([gt[0] for gt in ground_truths])
 
-        # We then go through each key, val in this dictionary
-        # and convert to the following (w.r.t same example):
-        # ammount_bboxes = {0:torch.tensor[0,0,0], 1:torch.tensor[0,0,0,0,0]}
+        # we then go through each key, val in this dictionary and convert to the following (w.r.t same example):
+        # ammount_bboxes = {0:torch.tensor([0,0,0]), 1:torch.tensor([0,0,0,0,0])}
         for key, val in amount_bboxes.items():
             amount_bboxes[key] = torch.zeros(val)
 
@@ -196,37 +187,39 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
         FP = torch.zeros((len(detections)))
         total_true_bboxes = len(ground_truths)
 
-        # If none exists for this class then we can safely skip
+        # if none exists for this class then we can safely skip
         if total_true_bboxes == 0:
             continue
 
         for detection_idx, detection in enumerate(detections):
-            # Only take out the ground_truths that have the same
-            # training idx as detection
-            ground_truth_img = [
-                bbox for bbox in ground_truths if bbox[0] == detection[0]
-            ]
+            # only take out the ground_truths that have the same training idx as detection
+            ground_truth_img = [bbox for bbox in ground_truths if bbox[0] == detection[0]]
 
-            num_gts = len(ground_truth_img)
-            best_iou = 0
+            num_gts = len(ground_truth_img) # number of target bboxes in this image
+            best_iou = 0                    # we're going to keep track of the best iou
 
             for idx, gt in enumerate(ground_truth_img):
+                # each bbox contain [train_idx, class_prediction, prob_score, x1, y1, x2, y2]
                 iou = intersection_over_union(
-                    torch.tensor(detection[3:]),
-                    torch.tensor(gt[3:]),
-                    box_format=box_format,
+                    torch.tensor(detection[3:]), # we only need to take [x1, y1, x2, y2] to calculate iou
+                    torch.tensor(gt[3:]), 
+                    box_format=box_format, 
                 )
 
                 if iou > best_iou:
-                    best_iou = iou
-                    best_gt_idx = idx
+                    best_iou = iou    # 
+                    best_gt_idx = idx # 
 
             if best_iou > iou_threshold:
                 # only detect ground truth detection once
-                if amount_bboxes[detection[0]][best_gt_idx] == 0:
+                train_idx = detection[0]
+                # rewind that we initialized the amount_bboxes[key] as torch.zeros(val) above, e.g. [0,0,..,0]
+                # if it's equal to 0 that means this target bbox has not yet been covered
+                if amount_bboxes[train_idx][best_gt_idx] == 0:
                     # true positive and add this bounding box to seen
                     TP[detection_idx] = 1
-                    amount_bboxes[detection[0]][best_gt_idx] = 1
+                    amount_bboxes[train_idx][best_gt_idx] = 1 # set to 1 as covered
+                # if it's not equal to 0 that means this bbox was already covered previously
                 else:
                     FP[detection_idx] = 1
 
@@ -236,13 +229,22 @@ def mean_average_precision(pred_boxes, true_boxes, iou_threshold=0.5, box_format
 
         TP_cumsum = torch.cumsum(TP, dim=0)
         FP_cumsum = torch.cumsum(FP, dim=0)
+
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
+        # recalls = torch.divide(TP_cumsum, (total_true_bboxes + epsilon))
         precisions = TP_cumsum / (TP_cumsum + FP_cumsum + epsilon)
-        precisions = torch.cat((torch.tensor([1]), precisions))
+        # precisions = torch.divide(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
+
+        # when calculate Average Presicion, AP (area under PR curve), we need to start at (0, 1) 
+        # so we manually add 0 and 1 at the front of recalls (x-axis) and precisions (y-axis)
         recalls = torch.cat((torch.tensor([0]), recalls))
-        # torch.trapz for numerical integration
+        precisions = torch.cat((torch.tensor([1]), precisions))
+
+        # torch.trapz(y, x) for numerical integration
         average_precisions.append(torch.trapz(precisions, recalls))
 
+    # this result is for single iou_threshold, so we should iterate through different iou thresholds
+    # outside this function, say range(0.5, 0.95, 0.05), and average the results to get the actual mAP
     return sum(average_precisions) / len(average_precisions)
 
 
@@ -394,8 +396,9 @@ def check_class_accuracy(model, loader, threshold):
     tot_noobj, correct_noobj = 0, 0
     tot_obj, correct_obj = 0, 0
 
+    # for idx, (x, y) in enumerate(tqdm(loader)):
     for idx, (x, y) in enumerate(tqdm(loader)):
-        if idx == 101: break  # NOTE why break at idx == 100 or 101?
+        if idx == 100: break  # NOTE why break at idx == 100?
 
         # IndexError (https://discuss.pytorch.org/t/indexerror-index-3-is-out-of-bounds-for-dimension-0-with-size-3/39333/4)
         
@@ -405,7 +408,7 @@ def check_class_accuracy(model, loader, threshold):
 
         for i in range(3):
             y[i] = y[i].to(config.DEVICE)
-            obj   = y[i][..., 0] == 1 # in paper this is Iobj_i
+            obj = y[i][..., 0] == 1   # in paper this is Iobj_i
             noobj = y[i][..., 0] == 0 # in paper this is Iobj_i
 
             correct_class += torch.sum(
@@ -477,7 +480,6 @@ def get_loaders(train_csv_path, test_csv_path):
         anchors=config.ANCHORS,
         S=config.S, # [13, 26, 52]
         transform=config.train_transforms,
-        # transform=None, # set to None will get a RuntimeError
     )
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -495,7 +497,6 @@ def get_loaders(train_csv_path, test_csv_path):
         anchors=config.ANCHORS,
         S=config.S, # [13, 26, 52]
         transform=config.test_transforms,
-        # transform=None, # set to None will get a RuntimeError
     )
     test_loader = DataLoader(
         dataset=test_dataset,
@@ -513,7 +514,6 @@ def get_loaders(train_csv_path, test_csv_path):
     #     anchors=config.ANCHORS,
     #     S=config.S, # [13, 26, 52]
     #     transform=config.test_transforms,
-    #     # transform=None, # set to None will get a RuntimeError
     # )
     # train_eval_loader = DataLoader(
     #     dataset=train_eval_dataset,
@@ -548,6 +548,7 @@ def plot_couple_examples(model, loader, thresh, iou_thresh, anchors):
             bboxes[i], iou_threshold=iou_thresh, threshold=thresh, box_format="midpoint",
         )
         plot_image(x[i].permute(1,2,0).detach().cpu(), nms_boxes)
+
 
 
 def seed_everything(seed=42):

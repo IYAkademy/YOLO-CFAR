@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 17:04:43 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: model.py
 @dependencies:
@@ -352,4 +353,3 @@ if __name__ == "__main__":
 # torch.Size([16, 3, 52, 52, 6])
 
 # Success!
-

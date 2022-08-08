@@ -2,6 +2,7 @@
 """
 Created on Fri Jul 29 18:30:27 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: resize_images.py
 @dependencies:
@@ -60,6 +61,5 @@ def main(max_iter=1, file_type='jpg'):
 
 if __name__ == '__main__':
     # testing(1, 'jpg')
-    main(1600, 'jpg')
+    main(2000, 'jpg')
 
-    

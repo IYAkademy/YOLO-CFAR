@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 17:01:48 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: config.py
 @dependencies:
@@ -11,31 +12,30 @@ Created on Mon Jul 18 17:01:48 2022
     torch >= 1.7.1
     torchvision >= 0.8.2
     albumentations >= 0.5.2
-
+    
 """
-
-import torch
 
 import albumentations as A
 import cv2
+import torch
 
 from albumentations.pytorch import ToTensorV2
-# from utils import seed_everything # ImportError: cannot import name 'seed_everything' from 'utils' ??
+# from utils import seed_everything
 
 DATASET = 'D:/Datasets/RD_maps' # 'D:/Datasets/PASCAL_VOC', 'D:/Datasets/RD_maps'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# seed_everything()  # if you want deterministic behavior
+# seed_everything()  # If you want deterministic behavior
 
 NUM_WORKERS = 1      # 4
 BATCH_SIZE = 16      # 32
 IMAGE_SIZE = 416     # 416
 NUM_CLASSES = 1     # PASCAL VOV has 20 classes, MS COCO has 80 classes
-LEARNING_RATE = 3e-5 # 3e-5
+LEARNING_RATE = 1e-4 # 3e-5
 
 WEIGHT_DECAY = 1e-4     # 1e-4, 5e-4
 NUM_EPOCHS = 1      # 1000
-CONF_THRESHOLD = 0.2 # 0.6
+CONF_THRESHOLD = 0.4 # 0.6
 MAP_IOU_THRESH = 0.5 
 NMS_IOU_THRESH = 0.45 
 
@@ -69,78 +69,54 @@ ANCHORS = [
     [(0.1250, 0.1250), (0.1250, 0.1250), (0.1250, 0.1250)],
 ]
 
-# if we set scale be lower than 1.0 would cause some unknown value errors
-# ValueError: Requested crop size (416, 416) is larger than the image size (332, 332)
-# ValueError: Expected y_max for bbox (0.375, 0.9375, 0.5, 1.0625, 0.0) to be in the range [0.0, 1.0], got 1.0625.
-scale = 1.0 # 1.1, 1.2 
-
-# Albumentations Doc (https://vfdev-5-albumentations.readthedocs.io/en/docs_pytorch_fix/api/augmentations.html)
-train_transforms = A.Compose( # Compose transforms and handle all transformations regarding bounding boxes
+# scale cannot be lower than 1.0, otherwise would encounter ValueError: Requested crop size (416, 416) is larger than the image size (332, 332)
+# scale = 1.0 # 1.1, 1.2 
+train_transforms = A.Compose(
     [
-        # Resizing transforms, NOTE spatial augmentations could affect the size of bounding boxes 
-        # Rescale an image so that maximum side is equal to max_size, while keeping the aspect ratio
-        # A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale), p=1.0), 
-        
-        # Pad the sides of an image / mask if size is less than a desired number
+        # A.LongestMaxSize(max_size=int(IMAGE_SIZE * scale)),
         # A.PadIfNeeded(
-        #     min_height=int(IMAGE_SIZE * scale), # Minimal result image height
-        #     min_width=int(IMAGE_SIZE * scale),  # Minimal result image width
-        #     # border_mode=cv2.BORDER_CONSTANT,    # Flag that is used to specify the pixel extrapolation method
+        #     min_height=int(IMAGE_SIZE * scale), min_width=int(IMAGE_SIZE * scale), 
+        #     # border_mode=cv2.BORDER_CONSTANT,
         # ),
-
-        # Crop transforms, NOTE spatial augmentations could affect the size of bounding boxes
-        # A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE, p=0.1), # Crop a random part of the input
-
-        # Transforms
-        # A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4), # Randomly changes the brightness, contrast, and saturation
-        
-        # Geometric transforms
-        # Randomly apply affine transforms: translate, scale and rotate the input
-        # A.ShiftScaleRotate(rotate_limit=20, p=0.5, border_mode=cv2.BORDER_CONSTANT), 
-
-        # Transforms
-        # A.HorizontalFlip(p=0.5),     # Randomly flip the input horizontally around the y-axis 
-        # A.Blur(blur_limit=7, p=0.1), # Randomly blur the input image using a random-sized kernel
-        # A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.1), # Randomly apply Contrast Limited Adaptive Histogram Equalization (CLAHE)
+        # A.RandomCrop(width=IMAGE_SIZE, height=IMAGE_SIZE),
+        # A.ColorJitter(brightness=0.6, contrast=0.6, saturation=0.6, hue=0.6, p=0.4),
+        # A.OneOf(
+        #     [
+        #         A.ShiftScaleRotate(
+        #             rotate_limit=10, p=0.4, border_mode=cv2.BORDER_CONSTANT
+        #         ),
+        #         A.IAAAffine(shear=10, p=0.4, mode="constant"),
+        #     ],
+        #     p=1.0,
+        # ),
+        # A.HorizontalFlip(p=0.5),
+        # A.Blur(p=0.1),
+        # A.CLAHE(p=0.1),
         # A.Posterize(p=0.1),
-        # A.ToGray(p=0.1),             # Randomly convert the input RGB image to grayscale
-        # A.ChannelShuffle(p=0.05),    # Randomly rearrange channels of the input RGB image
+        # A.ToGray(p=0.1),
+        # A.ChannelShuffle(p=0.05),
 
-        # Divide pixel values by 255 = 2**8 - 1, subtract mean per channel and divide by std per channel
-        # remove Normalize() may cause RuntimeError: Input type (torch.cuda.ByteTensor) and weight type (torch.cuda.HalfTensor) should be the same
-        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255.0, p=0.1),
+        # remove Normalize may cause RuntimeError: Input type (torch.cuda.ByteTensor) and weight type (torch.cuda.HalfTensor) should be the same
+        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
         ToTensorV2(),
     ],
-    # bbox_params=A.BboxParams(
-    #     format="yolo", 
-    #     label_fields=[], 
-    #     min_visibility=0.4, 
-    # ), 
-    # transform on bbox_params would cause some unknown value errors
-    # ValueError: Expected x_max for bbox (0.8774, 0.8149, 1.0024, 0.9399, 0.0) to be in the range [0.0, 1.0]
+    # bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[],), # transform on bbox_params would cause unknown error
 )
 test_transforms = A.Compose(
     [
-        # Resizing transforms, NOTE spatial augmentations could affect the size of bounding boxes 
-        # Rescale an image so that maximum side is equal to max_size, while keeping the aspect ratio
-        # A.LongestMaxSize(max_size=IMAGE_SIZE), 
-
-        # Pad the sides of an image / mask if size is less than a desired number
-        # A.PadIfNeeded(min_height=IMAGE_SIZE, min_width=IMAGE_SIZE, border_mode=cv2.BORDER_CONSTANT), 
-
-        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,), 
-        ToTensorV2(), 
+        # A.LongestMaxSize(max_size=IMAGE_SIZE),
+        # A.PadIfNeeded(
+        #     min_height=IMAGE_SIZE, min_width=IMAGE_SIZE, 
+        #     # border_mode=cv2.BORDER_CONSTANT
+        # ),
+        A.Normalize(mean=[0, 0, 0], std=[1, 1, 1], max_pixel_value=255,),
+        ToTensorV2(),
     ],
-    # bbox_params=A.BboxParams(
-    #     format="yolo", 
-    #     label_fields=[],
-    #     min_visibility=0.4, 
-    # ), 
-    # transform on bbox_params would cause unknown error
+    # bbox_params=A.BboxParams(format="yolo", min_visibility=0.4, label_fields=[]), # transform on bbox_params would cause unknown error
 )
 
-
-# train_transforms, test_transforms = None, None # transform set to None would cause unknown RuntimeError
+# ValueError: Expected y_max for bbox (0.375, 0.9375, 0.5, 1.0625, 0.0) to be in the range [0.0, 1.0], got 1.0625.
+# train_transforms, test_transforms = None, None # transform would cause unknown error
 
 CLASSES = [
     "target"
@@ -254,7 +230,6 @@ CLASSES3 = [
     'toothbrush'
 ]
 
-
 # Albumentations examples (https://github.com/albumentations-team/albumentations_examples/blob/master/notebooks/example_bboxes.ipynb)
 def test():
     # Import the required libraries, besides albumentations and cv2
@@ -362,3 +337,4 @@ def test():
 
 if __name__ == "__main__":
     test()
+

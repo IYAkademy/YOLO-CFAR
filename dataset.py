@@ -2,6 +2,7 @@
 """
 Created on Mon Jul 18 17:02:28 2022
 
+@patch: 2022.08.01
 @author: Paul
 @file: dataset.py
 @dependencies:
@@ -35,8 +36,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 import os
-import time
-import math # for math.floor()
 
 # set to Ture so that we don't get any errors when we loading the images
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -150,10 +149,6 @@ class YOLODataset(Dataset):
                 # how many cells there are in this particular scale?
                 # (y, x) are relative coordinates between [0, 1] and we want to get the absolute coordinates (i, j) in the image
                 # i tells us which y cell, and j tells us which x cell
-                def compute_i_j():
-                    if x >= 1: x = 0.99
-                    if y >= 1: y = 0.99
-                    i, j = math.floor(S * y), math.floor(S * x) 
                 i, j = int(S * y), int(S * x) # e.g. x = 0.5, S = 13 --> int(6.5) = 6
                 # e.g. y, x = 0.625, 0.5 (should be the same as the box's y, x above)
                 # e.g. i, j = 1, 1
@@ -162,9 +157,6 @@ class YOLODataset(Dataset):
                 # targets[scale_idx] is checking in the list of diff target tensors, here we're taking out which anchor on that 
                 # particular scale, then we're taking out the i, j for the particular cells, and we're taking out 0 for P(Object)
 
-                if i == S or j == S:
-                    print(f"anchor_idx {anchor_idx} scale_idx {scale_idx}, anchor_on_scale {anchor_on_scale}, i {i}, j {j}, y {y}, x {x}")
-                
                 # 
                 #   File "d:\BeginnerPythonProjects\YOLOv3-PyTorch\dataset.py", line 163, in __getitem__
                 #     anchor_taken = targets[scale_idx][anchor_on_scale, i, j, 0] # e.g. originally tensor(0.)
@@ -261,8 +253,8 @@ def test():
         plot_image(x[0].permute(1, 2, 0).to("cpu"), boxes) # 
         print("-----------------------------------------")
 
-        # counter += 1 
-        # if counter == 1: break # run the test for some times then we stop
+        counter += 1 
+        if counter == 1: break # run the test for some times then we stop
 
         # sometimes would run into out of bound ValueError, NOTE probabily caused by transforms, scale, and bbox_params settings!
         # File "C:\Users\paulc\.conda\envs\pt3.7\lib\site-packages\albumentations\augmentations\bbox_utils.py", line 330, in check_bbox
