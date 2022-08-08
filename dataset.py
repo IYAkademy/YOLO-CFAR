@@ -138,7 +138,10 @@ class YOLODataset(Dataset):
 
                 # how we check which scale it belongs to? 
                 # scale_idx should be 0, 1, or 2, indicates which target we need to take out from the list of targets that we have above
-                scale_idx = anchor_idx // self.num_anchors_per_scale      # which scale
+                # scale_idx = anchor_idx // self.num_anchors_per_scale      # which scale
+                
+                # UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch.
+                scale_idx = torch.div(anchor_idx, self.num_anchors_per_scale, rounding_mode='floor')
 
                 # we also want to know which anchor on this particular scale are we assigning it to? 
                 # anchor_on_scale should also be 0, 1, or 2, indicates which anchor in that particular scale that we want to use 
