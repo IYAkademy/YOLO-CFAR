@@ -4,9 +4,9 @@ Created on Mon Jul 18 17:02:28 2022
 
 @patch: 
     2022.08.01
-    2022.10.25
+    2022.11.02
 @author: Paul
-@file: dataset.py
+@file: dataset2.py
 @dependencies:
     env pt3.7
     python 3.7.13
@@ -77,8 +77,6 @@ class YOLODataset(Dataset):
         return len(self.annotations)
 
     def __getitem__(self, index):
-        # print(f"index: {index}")
-        
         # get the index-th data, in the csv files, data are structured as indxe.jpg,index.txt, 
         # so (indxe, 0) get us the image and (index, 1) get us the label
 
@@ -142,7 +140,12 @@ class YOLODataset(Dataset):
 
                 # how we check which scale it belongs to? 
                 # scale_idx should be 0, 1, or 2, indicates which target we need to take out from the list of targets that we have above
-                scale_idx = anchor_idx // self.num_anchors_per_scale      # which scale
+                # scale_idx = anchor_idx // self.num_anchors_per_scale      # which scale
+
+                # UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. 
+                # To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, 
+                # use torch.div(a, b, rounding_mode='floor') # https://pytorch.org/docs/stable/generated/torch.div.html
+                scale_idx = torch.div(anchor_idx, self.num_anchors_per_scale, rounding_mode='floor')
 
                 # we also want to know which anchor on this particular scale are we assigning it to? 
                 # anchor_on_scale should also be 0, 1, or 2, indicates which anchor in that particular scale that we want to use 
@@ -220,9 +223,9 @@ def test():
     # PASCAL VOC "D:/Datasets/PASCAL_VOC/train.csv", "D:/Datasets/PASCAL_VOC/images", "D:/Datasets/PASCAL_VOC/labels",
     # MS COCO    "COCO/train.csv", "COCO/images/images/", "COCO/labels/labels_new/"
     dataset = YOLODataset(
-        config.DATASET + f"train.csv", # csv_file 
-        config.IMG_DIR,   # config.DATASET + f"2020-02-28-13-09-58/RD_maps/images",    # img_dir 
-        config.LABEL_DIR, # config.DATASET + f"2020-02-28-13-09-58/RD_maps/labels",    # label_dir 
+        "D:/Datasets/RD_maps/train.csv", # csv_file 
+        "D:/Datasets/RD_maps/scaled_colors",    # img_dir 
+        "D:/Datasets/RD_maps/labels",    # label_dir 
         S=S, # S=[13, 26, 52],   
         anchors=anchors, 
         transform=transform, 
@@ -268,3 +271,4 @@ def test():
 
 if __name__ == "__main__":
     test()
+

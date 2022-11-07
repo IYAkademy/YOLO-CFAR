@@ -253,7 +253,7 @@ class YOLOv3(nn.Module):
 
 if __name__ == "__main__":
     # actual parameters
-    num_classes = 1 # 20
+    num_classes = 3 # 20
     # YOLOv1: 448, YOLOv2/YOLOv3: 416 (with multi-scale training)
     IMAGE_SIZE = 416 # multiples of 32 are workable with stride [32, 16, 8]
     # stride = [8, 4, 2] 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     model = YOLOv3(num_classes=num_classes) # initialize a YOLOv3 model as model
     # simple test with random inputs of 16 examples, 3 channels, and IMAGE_SIZE-by-IMAGE_SIZE input
     x = torch.randn((num_examples, num_channels, IMAGE_SIZE, IMAGE_SIZE))
-    out = model(x) 
+    out = model(x)
 
     print("Output Shape: ")
     print("[num_examples, num_channels, feature_map, feature_map, num_classes + 5]")

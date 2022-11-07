@@ -25,6 +25,7 @@ from albumentations.pytorch import ToTensorV2
 
 # set the dataset path
 DATASET = f'D:/Datasets/CARRADA/' # 'D:/Datasets/PASCAL_VOC/', 'D:/Datasets/RD_maps/'
+DATASET2 = f'D:/Datasets/CARRADA2/'
 
 # directory names, number of directorie: 30
 dir_names = ['2019-09-16-12-52-12', '2019-09-16-12-55-51', '2019-09-16-12-58-42', '2019-09-16-13-03-38', '2019-09-16-13-06-41', 
@@ -50,7 +51,7 @@ NUM_CLASSES = 3     # PASCAL VOV has 20 classes, MS COCO has 80 classes
 LEARNING_RATE = 1e-4 # 3e-5
 
 WEIGHT_DECAY = 1e-4     # 1e-4, 5e-4
-NUM_EPOCHS = 1      # 1000
+NUM_EPOCHS = 100      # 1000
 CONF_THRESHOLD = 0.4 # 0.6
 MAP_IOU_THRESH = 0.5 
 NMS_IOU_THRESH = 0.45 
@@ -65,8 +66,8 @@ SAVE_MODEL = False # True
 
 # "D:/Datasets/PASCAL_VOC/checkpoint.pth.tar", "D:/Datasets/RD_maps/checkpoint.pth.tar"
 CHECKPOINT_FILE = "D:/Datasets/CARRADA/checkpoint.pth.tar" # 
-IMG_DIR = DATASET  + f"2020-02-28-13-09-58/RD_maps/" + "images/"   # "images/"
-LABEL_DIR = DATASET + f"2020-02-28-13-09-58/RD_maps/" + "labels/" # "labels/"
+IMG_DIR = DATASET2  + f"RA/2020-02-28-13-09-58/" + "images/"   # "images/"
+LABEL_DIR = DATASET2 + f"RA/2020-02-28-13-09-58/" + "labels/" # "labels/"
 
 # how we handle the anchor boxes? we will specify the anchor boxes in the following manner as a list of lists 
 # of tuples, where each tuple corresponds to the width and the height of a anchor box relative to the image size 
@@ -302,7 +303,7 @@ def test():
         plt.show()
 
     # Load the image and the annotations for it
-    img_idx = random.randint(1, 99) # get a random image index
+    img_idx = 97 # get a random image index
     print(f"image: 0000{img_idx}.txt") 
 
     # we can read the image through cv2.imread() in BGR or PIL.Image.open() in RGB, but the visualiz() 
@@ -325,8 +326,8 @@ def test():
     print(f"bbox: {bboxes}")
     
     # bboxes, category_ids and category_id_to_name all has to be iterable object
-    category_ids = [0]
-    category_id_to_name = {0: 'target'}
+    category_ids = [0, 1, 2]
+    category_id_to_name = {0: 'person', 1: 'cyclist', 2: 'vehicle'}
 
     # Visuaize the original image with bounding boxes
     # visualize(image, bboxes, category_ids, category_id_to_name)
